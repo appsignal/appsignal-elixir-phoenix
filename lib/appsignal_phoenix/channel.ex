@@ -65,6 +65,7 @@ defmodule Appsignal.Phoenix.Channel do
     )
   end
 
+  @doc false
   def set_sample_data(span, %Phoenix.Socket{
         id: id,
         channel: channel,
