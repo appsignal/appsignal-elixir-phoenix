@@ -61,7 +61,7 @@ defmodule Appsignal.Phoenix.EventHandlerTest do
     end
 
     test "sets the span's name" do
-      assert {:ok, [{%Span{}, "call.phoenix_endpoint"}]} = Test.Span.get(:set_name)
+      assert {:ok, [{%Span{}, "PhoenixWeb.Endpoint.call/2"}]} = Test.Span.get(:set_name)
     end
   end
 
@@ -114,7 +114,7 @@ defmodule Appsignal.Phoenix.EventHandlerTest do
       [:phoenix, :endpoint, :start],
       %{time: -576_460_736_044_040_000},
       %{
-        conn: %Plug.Conn{},
+        conn: %Plug.Conn{private: %{phoenix_endpoint: PhoenixWeb.Endpoint}},
         options: []
       }
     )
