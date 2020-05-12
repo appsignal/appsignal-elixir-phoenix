@@ -49,6 +49,7 @@ defmodule Appsignal.Phoenix.EventHandler do
       "http_request"
       |> @tracer.create_span(parent)
       |> @span.set_name("#{module_name(endpoint)}.call/2")
+      |> @span.set_attribute("appsignal:category", "endpoint.call")
 
     Logger.debug(
       "Appsignal.Phoenix.EventHandler: Start call.phoenix_endpoint event" <>

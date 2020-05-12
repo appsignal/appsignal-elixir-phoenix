@@ -63,6 +63,11 @@ defmodule Appsignal.Phoenix.EventHandlerTest do
     test "sets the span's name" do
       assert {:ok, [{%Span{}, "PhoenixWeb.Endpoint.call/2"}]} = Test.Span.get(:set_name)
     end
+
+    test "sets the span's category" do
+      assert {:ok, [{%Span{}, "appsignal:category", "endpoint.call"}]} =
+               Test.Span.get(:set_attribute)
+    end
   end
 
   describe "after receiving an endpoint-start and an endpoint-stop event" do
