@@ -42,6 +42,7 @@ defmodule Appsignal.Phoenix.MixProject do
   defp deps do
     [
       {:appsignal_plug, "~> 2.0.0-alpha.1"},
+      {:appsignal, github: "appsignal/appsignal-elixir", branch: "tracing", override: true},
       {:phoenix, "~> 1.4"},
       {:phoenix_html, "~> 2.11", only: :test},
       {:phoenix_live_view, "~> 0.9", only: :test},
