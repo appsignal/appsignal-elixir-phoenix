@@ -34,6 +34,8 @@ defmodule Appsignal.Phoenix.View do
     quote do
       @span Application.get_env(:appsignal, :appsignal_span, Appsignal.Span)
 
+      defoverridable [render: 2]
+
       def render(template, assigns) do
         {root, _pattern, _names} = __templates__()
         path = Path.join(root, template)
