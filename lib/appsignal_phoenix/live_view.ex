@@ -10,7 +10,7 @@ defmodule Appsignal.Phoenix.LiveView do
     Appsignal.instrument(
       "#{Appsignal.Utils.module_name(module)}##{name}",
       fn span ->
-        _ = @span.set_namespace(span, "channel")
+        _ = @span.set_namespace(span, "live_view")
 
         try do
           fun.()
