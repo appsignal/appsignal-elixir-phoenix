@@ -30,20 +30,25 @@ defmodule Appsignal.Phoenix.EventHandler do
   def phoenix_endpoint_start(
         _event,
         _measurements,
-        %{conn: %Plug.Conn{private: %{phoenix_endpoint: endpoint}}},
+        %{conn: %Plug.Conn{private: %{phoenix_endpoint: endpoint}, request_path: path}},
         _config
       ) do
     parent = @tracer.current_span()
 
     "http_request"
     |> @tracer.create_span(parent)
-    |> @span.set_name("#{module_name(endpoint)}.call/2")
+    |> @span.set_name(span_name(path, endpoint))
     |> @span.set_attribute("appsignal:category", "call.phoenix_endpoint")
   end
 
   defp phoenix_endpoint_stop(_event, _measurements, _metadata, _config) do
     @tracer.close_span(@tracer.current_span())
   end
+
+  defp span_name("" = _path, endpoint), do: span_name(endpoint)
+  defp span_name(nil = _path, endpoint), do: span_name(endpoint)
+  defp span_name(path, _endpoint), do: path
+  defp span_name(endpoint), do: "#{module_name(endpoint)}.call/2"
 
   defp module_name("Elixir." <> module), do: module
   defp module_name(module) when is_binary(module), do: module
