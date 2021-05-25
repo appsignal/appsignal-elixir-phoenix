@@ -17,11 +17,15 @@ if Code.ensure_loaded?(Phoenix.LiveView) do
     def metadata(%Phoenix.LiveView.Socket{} = socket) do
       %{
         "id" => Map.get(socket, :id),
-        "root_view" => Map.get(socket, :root_view),
+        "root_view" => root_view(socket),
         "view" => Map.get(socket, :view),
         "endpoint" => Map.get(socket, :endpoint),
         "router" => Map.get(socket, :router)
       }
+    end
+
+    defp root_view(socket) do
+      socket |> Map.get(:private, %{}) |> Map.get(:root_view) || Map.get(socket, :root_view)
     end
   end
 end
