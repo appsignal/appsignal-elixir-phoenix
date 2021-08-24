@@ -45,9 +45,13 @@ defmodule Appsignal.Phoenix.MixProject do
     system_version = System.version()
 
     mime_dependency =
-      case Version.compare(system_version, "1.10.0") do
-        :lt -> [{:mime, "~> 1.0", only: [:test, :test_no_nif]}]
-        _ -> []
+      if Mix.env == :test || Mix.env == :test_no_nif do
+        case Version.compare(system_version, "1.10.0") do
+          :lt -> [{:mime, "~> 1.0", only: [:test, :test_no_nif]}]
+          _ -> []
+        end
+      else
+          []
       end
 
     [
