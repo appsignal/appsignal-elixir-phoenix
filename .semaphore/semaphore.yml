@@ -49,6 +49,7 @@ blocks:
       jobs:
         - name: Elixir master, OTP 23
           commands:
+            - kiex install master
             - sem-version erlang 23.2
             - sem-version elixir master
             - elixir -v
@@ -59,6 +60,7 @@ blocks:
             - mix test
         - name: Elixir master, OTP 22
           commands:
+            - kiex install master
             - sem-version erlang 22.3
             - sem-version elixir master
             - elixir -v
