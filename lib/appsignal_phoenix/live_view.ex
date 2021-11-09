@@ -1,6 +1,7 @@
 defmodule Appsignal.Phoenix.LiveView do
   @tracer Application.get_env(:appsignal, :appsignal_tracer, Appsignal.Tracer)
   @span Application.get_env(:appsignal, :appsignal_span, Appsignal.Span)
+  alias Appsignal.Utils.MapFilter
 
   def instrument(module, name, socket, fun) do
     instrument(module, name, %{}, socket, fun)
@@ -18,10 +19,11 @@ defmodule Appsignal.Phoenix.LiveView do
           kind, reason ->
             stack = __STACKTRACE__
 
+            @tracer.set_params(MapFilter.filter(params))
+            @tracer.set_environment(Appsignal.Metadata.metadata(socket))
+
             _ =
               span
-              |> @span.set_sample_data("params", params)
-              |> @span.set_sample_data("environment", Appsignal.Metadata.metadata(socket))
               |> @span.add_error(kind, reason, stack)
               |> @tracer.close_span()
 
@@ -29,10 +31,8 @@ defmodule Appsignal.Phoenix.LiveView do
             :erlang.raise(kind, reason, stack)
         else
           result ->
-            _ =
-              span
-              |> @span.set_sample_data("params", params)
-              |> @span.set_sample_data("environment", Appsignal.Metadata.metadata(socket))
+            @tracer.set_params(MapFilter.filter(params))
+            @tracer.set_environment(Appsignal.Metadata.metadata(socket))
 
             result
         end

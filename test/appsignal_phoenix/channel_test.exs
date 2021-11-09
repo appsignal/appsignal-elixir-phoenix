@@ -40,8 +40,8 @@ defmodule Appsignal.Phoenix.ChannelTest do
       assert {:ok, [{%Span{}, "channel"}]} = Test.Span.get(:set_namespace)
     end
 
-    test "sets the span's sample data" do
-      assert_sample_data("environment", %{
+    test "sets the span's environment" do
+      assert_environment(%{
         "channel" => PhoenixWeb.RoomChannel,
         "endpoint" => PhoenixWeb.Endpoint,
         "handler" => PhoenixWeb.UserSocket,
@@ -79,11 +79,11 @@ defmodule Appsignal.Phoenix.ChannelTest do
     end
 
     test "sets the span's parameters" do
-      assert_sample_data("params", %{"body" => "Hello world!"})
+      assert_params(%{"body" => "Hello world!"})
     end
 
-    test "sets the span's sample data" do
-      assert_sample_data("environment", %{
+    test "sets the span's environment" do
+      assert_environment(%{
         "channel" => PhoenixWeb.RoomChannel,
         "endpoint" => PhoenixWeb.Endpoint,
         "handler" => PhoenixWeb.UserSocket,
@@ -96,6 +96,24 @@ defmodule Appsignal.Phoenix.ChannelTest do
 
     test "closes the span" do
       assert {:ok, [{%Span{}}]} = Test.Tracer.get(:close_span)
+    end
+  end
+
+  describe "instrument/5, when filter_parameters is set" do
+    setup %{socket: socket} do
+      Application.put_env(:phoenix, :filter_parameters, {:keep, ["body"]})
+
+      PhoenixWeb.Channel.handle_in(
+        "new_msg",
+        %{"body" => "Hello world!", "secret" => "hunter2"},
+        socket
+      )
+
+      Application.delete_env(:phoenix, :filter_parameters)
+    end
+
+    test "filters the span's parameters" do
+      assert_params(%{"body" => "Hello world!", "secret" => "[FILTERED]"})
     end
   end
 
@@ -121,11 +139,11 @@ defmodule Appsignal.Phoenix.ChannelTest do
     end
 
     test "sets the span's parameters" do
-      assert_sample_data("params", %{"body" => "Exception!"})
+      assert_params(%{"body" => "Exception!"})
     end
 
-    test "sets the span's sample data" do
-      assert_sample_data("environment", %{
+    test "sets the span's environment" do
+      assert_environment(%{
         "channel" => PhoenixWeb.RoomChannel,
         "endpoint" => PhoenixWeb.Endpoint,
         "handler" => PhoenixWeb.UserSocket,
@@ -154,11 +172,39 @@ defmodule Appsignal.Phoenix.ChannelTest do
     end
   end
 
-  defp assert_sample_data(asserted_key, asserted_data) do
-    {:ok, sample_data} = Test.Span.get(:set_sample_data)
+  describe "instrument/5, when an error is raised and filter_parameters is set" do
+    setup %{socket: socket} do
+      try do
+        Application.put_env(:phoenix, :filter_parameters, {:keep, ["body"]})
 
-    assert Enum.any?(sample_data, fn {%Span{}, key, data} ->
-             key == asserted_key and data == asserted_data
+        PhoenixWeb.Channel.handle_in(
+          "new_msg",
+          %{"body" => "Exception!", "secret" => "hunter2"},
+          socket
+        )
+      catch
+        _kind, _reason -> Application.delete_env(:phoenix, :filter_parameters)
+      end
+    end
+
+    test "filters the span's parameters" do
+      assert_params(%{"body" => "Exception!", "secret" => "[FILTERED]"})
+    end
+  end
+
+  defp assert_environment(asserted_data) do
+    {:ok, environment} = Test.Tracer.get(:set_environment)
+
+    assert Enum.any?(environment, fn {data} ->
+             data == asserted_data
+           end)
+  end
+
+  defp assert_params(asserted_data) do
+    {:ok, params} = Test.Tracer.get(:set_params)
+
+    assert Enum.any?(params, fn {data} ->
+             data == asserted_data
            end)
   end
 end
