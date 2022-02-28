@@ -35,11 +35,10 @@ defmodule Appsignal.Phoenix.LiveView.AutoInstrument do
     do_instrument(module, :params, params, socket, body)
   end
 
-  # TODO: Provide implementation of Appsignal.Metadata for `nil` when socket is unavailable.
   # render(assigns)
-  # def instrument(body, %{module: module, name: :render, args: [_assigns]}) do
-  #   do_instrument(module, :render, %{}, nil, body)
-  # end
+  def instrument(body, %{module: module, name: :render, args: [_assigns]}) do
+    do_instrument(module, :render, %{}, nil, body)
+  end
 
   #
   # Phoenix.LiveComponent
@@ -50,11 +49,10 @@ defmodule Appsignal.Phoenix.LiveView.AutoInstrument do
     do_instrument(module, :mount, %{}, socket, body)
   end
 
-  # TODO: Provide implementation of Appsignal.Metadata for `nil` when socket is unavailable.
   # preload(assigns)
-  # def instrument(body, %{module: module, name: :preload, args: [_assigns]}) do
-  #   do_instrument(module, :preload, %{}, nil, body)
-  # end
+  def instrument(body, %{module: module, name: :preload, args: [_assigns]}) do
+    do_instrument(module, :preload, %{}, nil, body)
+  end
 
   # update(assigns, socket)
   def instrument(body, %{module: module, name: :upload, args: [_assigns, socket]}) do

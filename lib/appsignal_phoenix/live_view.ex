@@ -72,6 +72,8 @@ defmodule Appsignal.Phoenix.LiveView do
   end
 
   def instrument(module, name, params, socket, fun) do
+    environment = if socket, do: Appsignal.Metadata.metadata(socket), else: %{}
+
     Appsignal.instrument(
       "#{Appsignal.Utils.module_name(module)}##{name}",
       fn span ->
@@ -86,7 +88,7 @@ defmodule Appsignal.Phoenix.LiveView do
             _ =
               span
               |> @span.set_sample_data("params", params)
-              |> @span.set_sample_data("environment", Appsignal.Metadata.metadata(socket))
+              |> @span.set_sample_data("environment", environment)
               |> @span.add_error(kind, reason, stack)
               |> @tracer.close_span()
 
@@ -97,7 +99,7 @@ defmodule Appsignal.Phoenix.LiveView do
             _ =
               span
               |> @span.set_sample_data("params", params)
-              |> @span.set_sample_data("environment", Appsignal.Metadata.metadata(socket))
+              |> @span.set_sample_data("environment", environment)
 
             result
         end
