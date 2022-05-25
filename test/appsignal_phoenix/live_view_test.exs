@@ -213,13 +213,17 @@ defmodule Appsignal.Phoenix.LiveViewTest do
       :telemetry.execute(
         [:phoenix, :live_view, :mount, :start],
         %{monotonic_time: -576_457_566_461_433_920, system_time: 1_653_474_764_790_125_080},
-        %{}
+        %{socket: %Phoenix.LiveView.Socket{view: __MODULE__}}
       )
     end
 
     test "creates a root span with a namespace and a start time" do
       assert {:ok, [{"live_view", nil, [start_time: 1_653_474_764_790_125_080]}]} =
                Test.Tracer.get(:create_span)
+    end
+
+    test "sets the span's name" do
+      assert {:ok, [{%Span{}, "Appsignal.Phoenix.LiveViewTest#mount"}]} = Test.Span.get(:set_name)
     end
   end
 end
