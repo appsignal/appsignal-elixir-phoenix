@@ -225,5 +225,13 @@ defmodule Appsignal.Phoenix.LiveViewTest do
     test "sets the span's name" do
       assert {:ok, [{%Span{}, "Appsignal.Phoenix.LiveViewTest#mount"}]} = Test.Span.get(:set_name)
     end
+
+    test "sets the span's category" do
+      assert {:ok, attributes} = Test.Span.get(:set_attribute)
+
+      assert Enum.any?(attributes, fn {%Span{}, key, data} ->
+               key == "appsignal:category" and data == "mount.live_view"
+             end)
+    end
   end
 end

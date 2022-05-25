@@ -58,5 +58,6 @@ defmodule Appsignal.Phoenix.LiveView do
     "live_view"
     |> @tracer.create_span(nil, start_time: system_time)
     |> @span.set_name("#{Appsignal.Utils.module_name(view)}##{name}")
+    |> @span.set_attribute("appsignal:category", "#{name}.live_view")
   end
 end
