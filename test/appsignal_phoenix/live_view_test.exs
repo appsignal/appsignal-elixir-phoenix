@@ -213,7 +213,11 @@ defmodule Appsignal.Phoenix.LiveViewTest do
       :telemetry.execute(
         [:phoenix, :live_view, :mount, :start],
         %{monotonic_time: -576_457_566_461_433_920, system_time: 1_653_474_764_790_125_080},
-        %{socket: %Phoenix.LiveView.Socket{view: __MODULE__}}
+        %{
+          params: %{foo: "bar"},
+          session: %{bar: "baz"},
+          socket: %Phoenix.LiveView.Socket{view: __MODULE__}
+        }
       )
     end
 
@@ -231,6 +235,22 @@ defmodule Appsignal.Phoenix.LiveViewTest do
 
       assert Enum.any?(attributes, fn {%Span{}, key, data} ->
                key == "appsignal:category" and data == "mount.live_view"
+             end)
+    end
+
+    test "sets the span's params" do
+      assert {:ok, attributes} = Test.Span.get(:set_sample_data)
+
+      assert Enum.any?(attributes, fn {%Span{}, key, data} ->
+               key == "params" and data == %{foo: "bar"}
+             end)
+    end
+
+    test "sets the span's session data" do
+      assert {:ok, attributes} = Test.Span.get(:set_sample_data)
+
+      assert Enum.any?(attributes, fn {%Span{}, key, data} ->
+               key == "session_data" and data == %{bar: "baz"}
              end)
     end
   end

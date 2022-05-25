@@ -52,12 +52,14 @@ defmodule Appsignal.Phoenix.LiveView do
   def handle_event_start(
         [:phoenix, :live_view, name, :start],
         %{system_time: system_time},
-        %{socket: %{view: view}},
+        %{params: params, session: session_data, socket: %{view: view}},
         _event_name
       ) do
     "live_view"
     |> @tracer.create_span(nil, start_time: system_time)
     |> @span.set_name("#{Appsignal.Utils.module_name(view)}##{name}")
     |> @span.set_attribute("appsignal:category", "#{name}.live_view")
+    |> @span.set_sample_data("params", params)
+    |> @span.set_sample_data("session_data", session_data)
   end
 end
