@@ -48,4 +48,8 @@ defmodule Appsignal.Phoenix.LiveView do
   def live_view_action(module, name, params, socket, function) do
     instrument(module, name, params, socket, function)
   end
+
+  def handle_event_start(_event, _params, _metadata, _event_name) do
+    @tracer.create_span("live_view")
+  end
 end

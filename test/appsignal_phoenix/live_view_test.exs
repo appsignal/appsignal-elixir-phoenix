@@ -198,4 +198,27 @@ defmodule Appsignal.Phoenix.LiveViewTest do
              key == asserted_key and data == asserted_data
            end)
   end
+
+  describe "handle_event_start/4" do
+    setup do
+      event = [:phoenix, :live_view, :mount, :start]
+
+      :telemetry.attach(
+        {__MODULE__, event},
+        event,
+        &Appsignal.Phoenix.LiveView.handle_event_start/4,
+        :ok
+      )
+
+      :telemetry.execute(
+        [:phoenix, :live_view, :mount, :start],
+        %{},
+        %{}
+      )
+    end
+
+    test "creates a root span" do
+      assert {:ok, [{"live_view"}]} = Test.Tracer.get(:create_span)
+    end
+  end
 end
