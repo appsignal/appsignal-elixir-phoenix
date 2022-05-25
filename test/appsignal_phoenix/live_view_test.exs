@@ -212,13 +212,14 @@ defmodule Appsignal.Phoenix.LiveViewTest do
 
       :telemetry.execute(
         [:phoenix, :live_view, :mount, :start],
-        %{},
+        %{monotonic_time: -576_457_566_461_433_920, system_time: 1_653_474_764_790_125_080},
         %{}
       )
     end
 
-    test "creates a root span" do
-      assert {:ok, [{"live_view"}]} = Test.Tracer.get(:create_span)
+    test "creates a root span with a namespace and a start time" do
+      assert {:ok, [{"live_view", nil, [start_time: 1_653_474_764_790_125_080]}]} =
+               Test.Tracer.get(:create_span)
     end
   end
 end
