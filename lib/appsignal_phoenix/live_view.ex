@@ -62,4 +62,9 @@ defmodule Appsignal.Phoenix.LiveView do
     |> @span.set_sample_data("params", params)
     |> @span.set_sample_data("session_data", session_data)
   end
+
+  def handle_event_stop(_event, _params, _metadata, _event_name) do
+    @tracer.current_span()
+    |> @tracer.close_span()
+  end
 end

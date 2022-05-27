@@ -254,4 +254,29 @@ defmodule Appsignal.Phoenix.LiveViewTest do
              end)
     end
   end
+
+  describe "handle_event_stop/4" do
+    setup do
+      event = [:phoenix, :live_view, :mount, :stop]
+
+      :telemetry.attach(
+        {__MODULE__, event},
+        event,
+        &Appsignal.Phoenix.LiveView.handle_event_stop/4,
+        :ok
+      )
+
+      Appsignal.Tracer.create_span("live_view")
+
+      :telemetry.execute(
+        [:phoenix, :live_view, :mount, :stop],
+        %{},
+        %{}
+      )
+    end
+
+    test "closes the span" do
+      assert {:ok, [{%Span{}}]} = Test.Tracer.get(:close_span)
+    end
+  end
 end
