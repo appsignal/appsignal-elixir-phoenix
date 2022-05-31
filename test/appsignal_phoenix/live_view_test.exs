@@ -275,8 +275,9 @@ defmodule Appsignal.Phoenix.LiveViewTest do
       )
     end
 
-    test "closes the span" do
-      assert {:ok, [{%Span{}}]} = Test.Tracer.get(:close_span)
+    test "closes the span with an end time" do
+      assert {:ok, [{%Span{}, [end_time: 1_653_474_764_790_125_080]}]} =
+               Test.Tracer.get(:close_span)
     end
   end
 end

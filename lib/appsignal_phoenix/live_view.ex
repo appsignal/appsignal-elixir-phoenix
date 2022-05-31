@@ -2,6 +2,7 @@ defmodule Appsignal.Phoenix.LiveView do
   require Appsignal.Utils
   @tracer Appsignal.Utils.compile_env(:appsignal, :appsignal_tracer, Appsignal.Tracer)
   @span Appsignal.Utils.compile_env(:appsignal, :appsignal_span, Appsignal.Span)
+  @os Appsignal.Utils.compile_env(:appsignal, :os, :os)
 
   def instrument(module, name, socket, fun) do
     instrument(module, name, %{}, socket, fun)
@@ -64,7 +65,6 @@ defmodule Appsignal.Phoenix.LiveView do
   end
 
   def handle_event_stop(_event, _params, _metadata, _event_name) do
-    @tracer.current_span()
-    |> @tracer.close_span()
+    @tracer.close_span(@tracer.current_span(), end_time: @os.system_time())
   end
 end
