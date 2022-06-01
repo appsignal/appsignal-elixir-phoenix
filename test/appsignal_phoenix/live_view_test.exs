@@ -355,5 +355,14 @@ defmodule Appsignal.Phoenix.LiveViewTest do
     test "adds an error to the current span", %{reason: reason} do
       assert {:ok, [{%Span{}, :error, ^reason, []}]} = Test.Span.get(:add_error)
     end
+
+    test "closes the span with an end time" do
+      assert {:ok, [{%Span{}, [end_time: 1_653_474_764_790_125_080]}]} =
+               Test.Tracer.get(:close_span)
+    end
+
+    test "ignores the process in the registry" do
+      assert :ets.lookup(:"$appsignal_registry", self()) == [{self(), :ignore}]
+    end
   end
 end
