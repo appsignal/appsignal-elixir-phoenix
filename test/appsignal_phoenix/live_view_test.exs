@@ -328,4 +328,32 @@ defmodule Appsignal.Phoenix.LiveViewTest do
                Test.Tracer.get(:close_span)
     end
   end
+
+  describe "handle_event_exception/4" do
+    setup do
+      event = [:phoenix, :live_view, :mount, :exception]
+      reason = %RuntimeError{message: "Exception!"}
+
+      :telemetry.attach(
+        {__MODULE__, event},
+        event,
+        &Appsignal.Phoenix.LiveView.handle_event_exception/4,
+        :ok
+      )
+
+      Appsignal.Tracer.create_span("live_view")
+
+      :telemetry.execute(
+        [:phoenix, :live_view, :mount, :exception],
+        %{},
+        %{kind: :error, reason: reason, stacktrace: []}
+      )
+
+      [reason: reason]
+    end
+
+    test "adds an error to the current span", %{reason: reason} do
+      assert {:ok, [{%Span{}, :error, ^reason, []}]} = Test.Span.get(:add_error)
+    end
+  end
 end

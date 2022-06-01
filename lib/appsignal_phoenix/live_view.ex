@@ -67,4 +67,13 @@ defmodule Appsignal.Phoenix.LiveView do
   def handle_event_stop(_event, _params, _metadata, _event_name) do
     @tracer.close_span(@tracer.current_span(), end_time: @os.system_time())
   end
+
+  def handle_event_exception(_event, _params, metadata, _event_name) do
+    @span.add_error(
+      @tracer.current_span(),
+      metadata[:kind],
+      metadata[:reason],
+      metadata[:stacktrace]
+    )
+  end
 end
