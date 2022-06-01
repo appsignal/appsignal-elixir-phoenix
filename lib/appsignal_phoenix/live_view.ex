@@ -50,6 +50,41 @@ defmodule Appsignal.Phoenix.LiveView do
     instrument(module, name, params, socket, function)
   end
 
+  def attach do
+    [
+      [:phoenix, :live_view, :mount],
+      [:phoenix, :live_view, :handle_params],
+      [:phoenix, :live_view, :handle_event]
+    ]
+    |> Enum.each(fn event ->
+      name = Enum.join(event, ".")
+
+      _ =
+        :telemetry.attach(
+          {__MODULE__, event ++ [:start]},
+          event ++ [:start],
+          &__MODULE__.handle_event_start/4,
+          name
+        )
+
+      _ =
+        :telemetry.attach(
+          {__MODULE__, event ++ [:stop]},
+          event ++ [:stop],
+          &__MODULE__.handle_event_stop/4,
+          name
+        )
+
+      _ =
+        :telemetry.attach(
+          {__MODULE__, event ++ [:exception]},
+          event ++ [:exception],
+          &__MODULE__.handle_event_exception/4,
+          name
+        )
+    end)
+  end
+
   def handle_event_start(
         [:phoenix, :live_view, name, :start],
         %{system_time: system_time},

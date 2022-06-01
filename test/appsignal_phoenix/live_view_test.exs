@@ -191,12 +191,65 @@ defmodule Appsignal.Phoenix.LiveViewTest do
     end
   end
 
-  defp assert_sample_data(asserted_key, asserted_data) do
-    {:ok, sample_data} = Test.Span.get(:set_sample_data)
+  describe "attach/0" do
+    setup do
+      Appsignal.Phoenix.LiveView.attach()
 
-    assert Enum.any?(sample_data, fn {%Span{}, key, data} ->
-             key == asserted_key and data == asserted_data
-           end)
+      on_exit(fn ->
+        :ok =
+          :telemetry.detach({Appsignal.Phoenix.LiveView, [:phoenix, :live_view, :mount, :start]})
+
+        :ok =
+          :telemetry.detach({Appsignal.Phoenix.LiveView, [:phoenix, :live_view, :mount, :stop]})
+
+        :ok =
+          :telemetry.detach(
+            {Appsignal.Phoenix.LiveView, [:phoenix, :live_view, :mount, :exception]}
+          )
+
+        :ok =
+          :telemetry.detach(
+            {Appsignal.Phoenix.LiveView, [:phoenix, :live_view, :handle_params, :start]}
+          )
+
+        :ok =
+          :telemetry.detach(
+            {Appsignal.Phoenix.LiveView, [:phoenix, :live_view, :handle_params, :stop]}
+          )
+
+        :ok =
+          :telemetry.detach(
+            {Appsignal.Phoenix.LiveView, [:phoenix, :live_view, :handle_params, :exception]}
+          )
+
+        :ok =
+          :telemetry.detach(
+            {Appsignal.Phoenix.LiveView, [:phoenix, :live_view, :handle_event, :start]}
+          )
+
+        :ok =
+          :telemetry.detach(
+            {Appsignal.Phoenix.LiveView, [:phoenix, :live_view, :handle_event, :stop]}
+          )
+
+        :ok =
+          :telemetry.detach(
+            {Appsignal.Phoenix.LiveView, [:phoenix, :live_view, :handle_event, :exception]}
+          )
+      end)
+    end
+
+    test "attach/0 attaches to LiveView events" do
+      assert attached?([:phoenix, :live_view, :mount, :start])
+      assert attached?([:phoenix, :live_view, :mount, :stop])
+      assert attached?([:phoenix, :live_view, :mount, :exception])
+      assert attached?([:phoenix, :live_view, :handle_params, :start])
+      assert attached?([:phoenix, :live_view, :handle_params, :stop])
+      assert attached?([:phoenix, :live_view, :handle_params, :exception])
+      assert attached?([:phoenix, :live_view, :handle_event, :start])
+      assert attached?([:phoenix, :live_view, :handle_event, :stop])
+      assert attached?([:phoenix, :live_view, :handle_event, :exception])
+    end
   end
 
   describe "handle_event_start/4, with a mount event" do
@@ -364,5 +417,23 @@ defmodule Appsignal.Phoenix.LiveViewTest do
     test "ignores the process in the registry" do
       assert :ets.lookup(:"$appsignal_registry", self()) == [{self(), :ignore}]
     end
+  end
+
+  defp assert_sample_data(asserted_key, asserted_data) do
+    {:ok, sample_data} = Test.Span.get(:set_sample_data)
+
+    assert Enum.any?(sample_data, fn {%Span{}, key, data} ->
+             key == asserted_key and data == asserted_data
+           end)
+  end
+
+  defp attached?(event) do
+    event
+    |> :telemetry.list_handlers()
+    |> Enum.filter(fn handler ->
+      {module, _} = handler.id
+      module == Appsignal.Phoenix.LiveView
+    end)
+    |> length() == 1
   end
 end
