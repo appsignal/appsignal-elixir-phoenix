@@ -249,6 +249,9 @@ defmodule Appsignal.Phoenix.LiveViewTest do
       assert attached?([:phoenix, :live_view, :handle_event, :start])
       assert attached?([:phoenix, :live_view, :handle_event, :stop])
       assert attached?([:phoenix, :live_view, :handle_event, :exception])
+      assert attached?([:phoenix, :live_component, :handle_event, :start])
+      assert attached?([:phoenix, :live_component, :handle_event, :stop])
+      assert attached?([:phoenix, :live_component, :handle_event, :exception])
     end
   end
 
