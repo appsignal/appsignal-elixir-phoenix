@@ -236,6 +236,21 @@ defmodule Appsignal.Phoenix.LiveViewTest do
           :telemetry.detach(
             {Appsignal.Phoenix.LiveView, [:phoenix, :live_view, :handle_event, :exception]}
           )
+
+        :ok =
+          :telemetry.detach(
+            {Appsignal.Phoenix.LiveView, [:phoenix, :live_component, :handle_event, :start]}
+          )
+
+        :ok =
+          :telemetry.detach(
+            {Appsignal.Phoenix.LiveView, [:phoenix, :live_component, :handle_event, :stop]}
+          )
+
+        :ok =
+          :telemetry.detach(
+            {Appsignal.Phoenix.LiveView, [:phoenix, :live_component, :handle_event, :exception]}
+          )
       end)
     end
 
