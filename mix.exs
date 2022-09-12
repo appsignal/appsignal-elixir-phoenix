@@ -54,6 +54,12 @@ defmodule Appsignal.Phoenix.MixProject do
         []
       end
 
+    phoenix_live_view_version =
+      case otp_version < "21" do
+        true -> ">= 0.9.0 and < 0.17.4"
+        false -> "~> 0.9"
+      end
+
     telemetry_version =
       case otp_version < "21" do
         true -> "~> 0.4"
@@ -65,7 +71,7 @@ defmodule Appsignal.Phoenix.MixProject do
       {:appsignal_plug, ">= 2.0.11 and < 3.0.0"},
       {:phoenix, "~> 1.4"},
       {:phoenix_html, "~> 2.11 or ~> 3.0", optional: true},
-      {:phoenix_live_view, "~> 0.9", optional: true},
+      {:phoenix_live_view, phoenix_live_view_version, optional: true},
       {:ex_doc, "~> 0.21", only: :dev, runtime: false},
       {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false},
       {:credo, "~> 1.4", only: [:dev, :test], runtime: false},
