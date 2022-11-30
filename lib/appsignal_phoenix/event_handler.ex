@@ -10,8 +10,9 @@ defmodule Appsignal.Phoenix.EventHandler do
     handlers = %{
       [:phoenix, :endpoint, :start] => &__MODULE__.phoenix_endpoint_start/4,
       [:phoenix, :endpoint, :stop] => &__MODULE__.phoenix_endpoint_stop/4,
-      [:phoenix_template, :render, :start] => &__MODULE__.phoenix_template_render_start/4,
-      [:phoenix_template, :render, :stop] => &__MODULE__.phoenix_template_render_stop/4
+      [:phoenix, :controller, :render, :start] => &__MODULE__.phoenix_template_render_start/4,
+      [:phoenix, :controller, :render, :stop] => &__MODULE__.phoenix_template_render_stop/4,
+      [:phoenix, :controller, :render, :exception] => &__MODULE__.phoenix_template_render_stop/4
     }
 
     for {event, fun} <- handlers do
