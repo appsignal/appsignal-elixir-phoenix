@@ -60,6 +60,14 @@ defmodule Appsignal.Phoenix.EventHandlerTest do
     end
   end
 
+  describe "after receiving an render-start and an render-exception event" do
+    setup [:create_root_span, :render_start_event, :render_exception_event]
+
+    test "finishes an event" do
+      assert {:ok, [{%Span{}}]} = Test.Tracer.get(:close_span)
+    end
+  end
+
   defp create_root_span(_context) do
     [span: Tracer.create_span("http_request")]
   end
@@ -88,7 +96,7 @@ defmodule Appsignal.Phoenix.EventHandlerTest do
 
   def render_start_event(_context) do
     :telemetry.execute(
-      [:phoenix_template, :render, :start],
+      [:phoenix, :controller, :render, :start],
       %{time: -576_460_736_044_040_000},
       %{view: PhoenixWeb.View, template: "template", type: "html"}
     )
@@ -96,7 +104,15 @@ defmodule Appsignal.Phoenix.EventHandlerTest do
 
   def render_finish_event(_context) do
     :telemetry.execute(
-      [:phoenix_template, :render, :stop],
+      [:phoenix, :controller, :render, :stop],
+      %{duration: 49_474_000},
+      %{}
+    )
+  end
+
+  def render_exception_event(_context) do
+    :telemetry.execute(
+      [:phoenix, :controller, :render, :exception],
       %{duration: 49_474_000},
       %{}
     )
