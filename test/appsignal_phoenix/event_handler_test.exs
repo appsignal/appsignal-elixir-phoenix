@@ -16,10 +16,6 @@ defmodule Appsignal.Phoenix.EventHandlerTest do
       assert {:ok, [{"http_request", ^parent}]} = Test.Tracer.get(:create_span)
     end
 
-    test "sets the span's name" do
-      assert {:ok, [{%Span{}, "PhoenixWeb.Endpoint.call/2"}]} = Test.Span.get(:set_name)
-    end
-
     test "sets the span's category" do
       assert {:ok, [{%Span{}, "appsignal:category", "call.phoenix_endpoint"}]} =
                Test.Span.get(:set_attribute)
@@ -28,6 +24,10 @@ defmodule Appsignal.Phoenix.EventHandlerTest do
 
   describe "after receiving an endpoint-start and an endpoint-stop event" do
     setup [:create_root_span, :endpoint_start_event, :endpoint_finish_event]
+
+    test "sets the span's name" do
+      assert {:ok, [{%Span{}, "AppsignalPhoenixExampleWeb.PageController#index"}]} = Test.Span.get(:set_name)
+    end
 
     test "finishes an event" do
       assert {:ok, [{%Span{}}]} = Test.Tracer.get(:close_span)
@@ -88,7 +88,7 @@ defmodule Appsignal.Phoenix.EventHandlerTest do
       [:phoenix, :endpoint, :stop],
       %{duration: 49_474_000},
       %{
-        conn: %Plug.Conn{status: 200},
+        conn: %Plug.Conn{status: 200, private: %{phoenix_action: :index, phoenix_controller: AppsignalPhoenixExampleWeb.PageController}},
         options: []
       }
     )

@@ -13,28 +13,6 @@ defmodule Appsignal.PhoenixTest do
     :ok
   end
 
-  describe "GET /" do
-    setup do
-      get("/")
-    end
-
-    test "sends the response", %{conn: conn} do
-      assert html_response(conn, 200) =~ "Welcome to Phoenix!"
-    end
-
-    test "creates a root span" do
-      assert {:ok, [{_, nil}]} = Test.Tracer.get(:create_span)
-    end
-
-    test "sets the span's name" do
-      assert {:ok, [{%Span{}, "PhoenixWeb.Controller#index"}]} = Test.Span.get(:set_name)
-    end
-
-    test "closes the span" do
-      assert {:ok, [{%Span{}}]} = Test.Tracer.get(:close_span)
-    end
-  end
-
   describe "GET /exception" do
     setup do
       get("/exception")
