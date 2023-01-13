@@ -12,7 +12,8 @@ defmodule Appsignal.Phoenix.EventHandler do
       [:phoenix, :endpoint, :stop] => &__MODULE__.phoenix_endpoint_stop/4,
       [:phoenix, :controller, :render, :start] => &__MODULE__.phoenix_template_render_start/4,
       [:phoenix, :controller, :render, :stop] => &__MODULE__.phoenix_template_render_stop/4,
-      [:phoenix, :controller, :render, :exception] => &__MODULE__.phoenix_template_render_stop/4
+      [:phoenix, :controller, :render, :exception] => &__MODULE__.phoenix_template_render_stop/4,
+      [:phoenix, :router_dispatch, :exception] => &__MODULE__.phoenix_router_dispatch_exception/4
     }
 
     for {event, fun} <- handlers do
@@ -47,6 +48,23 @@ defmodule Appsignal.Phoenix.EventHandler do
     @tracer.current_span()
     |> set_name(conn)
     |> @tracer.close_span()
+  end
+
+  def phoenix_router_dispatch_exception(_event, _measurements, %{reason: %Plug.Conn.WrapperError{conn: conn, reason: reason, stack: stack}}, _config) do
+    add_error(@tracer.root_span(), conn, reason, stack)
+  end
+
+  def phoenix_router_dispatch_exception(_event, _measurements, %{conn: conn, reason: reason, stack: stack}, _config) do
+    add_error(@tracer.root_span(), conn, reason, stack)
+  end
+
+  defp add_error(span, conn, reason, stack) do
+    span
+    |> set_name(conn)
+    |> @span.add_error(:error, reason, stack)
+    |> @tracer.close_span()
+
+    @tracer.ignore()
   end
 
   defp set_name(span, %Plug.Conn{private: %{phoenix_action: action, phoenix_controller: controller}}) do

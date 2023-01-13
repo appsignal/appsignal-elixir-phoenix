@@ -26,10 +26,73 @@ defmodule Appsignal.Phoenix.EventHandlerTest do
     setup [:create_root_span, :endpoint_start_event, :endpoint_finish_event]
 
     test "sets the span's name" do
-      assert {:ok, [{%Span{}, "AppsignalPhoenixExampleWeb.PageController#index"}]} = Test.Span.get(:set_name)
+      assert {:ok, [{%Span{}, "AppsignalPhoenixExampleWeb.PageController#index"}]} =
+               Test.Span.get(:set_name)
     end
 
     test "finishes an event" do
+      assert {:ok, [{%Span{}}]} = Test.Tracer.get(:close_span)
+    end
+  end
+
+  describe "after receiving an endpoint-start and an router_dispatch-exception event" do
+    setup [:create_root_span, :endpoint_start_event]
+
+    setup do
+      :telemetry.execute(
+        [:phoenix, :router_dispatch, :exception],
+        %{duration: 49_474_000},
+        %{
+          conn: %Plug.Conn{private: %{phoenix_action: :index, phoenix_controller: AppsignalPhoenixExampleWeb.PageController}},
+          reason: %RuntimeError{},
+          stack: [],
+          options: []
+        }
+      )
+    end
+
+    test "sets the root span's name" do
+      assert {:ok, [{%Span{}, "AppsignalPhoenixExampleWeb.PageController#index"}]} =
+               Test.Span.get(:set_name)
+    end
+
+    test "sets the root span's error" do
+      assert {:ok, [{%Span{}, :error, %RuntimeError{}, []}]} = Test.Span.get(:add_error)
+    end
+
+    test "closes the root span" do
+      assert {:ok, [{%Span{}}]} = Test.Tracer.get(:close_span)
+    end
+  end
+
+  describe "after receiving an endpoint-start and a wrapped router_dispatch-exception event" do
+    setup [:create_root_span, :endpoint_start_event]
+
+    setup do
+      :telemetry.execute(
+        [:phoenix, :router_dispatch, :exception],
+        %{duration: 49_474_000},
+        %{
+          reason: %Plug.Conn.WrapperError{
+            conn: %Plug.Conn{private: %{phoenix_action: :index, phoenix_controller: AppsignalPhoenixExampleWeb.PageController}},
+            reason: %RuntimeError{},
+            stack: [],
+          },
+          options: []
+        }
+      )
+    end
+
+    test "sets the root span's name" do
+      assert {:ok, [{%Span{}, "AppsignalPhoenixExampleWeb.PageController#index"}]} =
+               Test.Span.get(:set_name)
+    end
+
+    test "sets the root span's error" do
+      assert {:ok, [{%Span{}, :error, %RuntimeError{}, []}]} = Test.Span.get(:add_error)
+    end
+
+    test "closes the root span" do
       assert {:ok, [{%Span{}}]} = Test.Tracer.get(:close_span)
     end
   end
@@ -88,7 +151,13 @@ defmodule Appsignal.Phoenix.EventHandlerTest do
       [:phoenix, :endpoint, :stop],
       %{duration: 49_474_000},
       %{
-        conn: %Plug.Conn{status: 200, private: %{phoenix_action: :index, phoenix_controller: AppsignalPhoenixExampleWeb.PageController}},
+        conn: %Plug.Conn{
+          status: 200,
+          private: %{
+            phoenix_action: :index,
+            phoenix_controller: AppsignalPhoenixExampleWeb.PageController
+          }
+        },
         options: []
       }
     )
