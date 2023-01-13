@@ -43,10 +43,14 @@ defmodule Appsignal.Phoenix.EventHandler do
     |> @span.set_attribute("appsignal:category", "call.phoenix_endpoint")
   end
 
-  def phoenix_endpoint_stop(_event, _measurements, %{conn: %Plug.Conn{private: %{phoenix_action: action, phoenix_controller: controller}}}, _config) do
+  def phoenix_endpoint_stop(_event, _measurements, %{conn: conn}, _config) do
     @tracer.current_span()
-    |> @span.set_name("#{module_name(controller)}##{action}")
+    |> set_name(conn)
     |> @tracer.close_span()
+  end
+
+  defp set_name(span, %Plug.Conn{private: %{phoenix_action: action, phoenix_controller: controller}}) do
+    @span.set_name(span, "#{module_name(controller)}##{action}")
   end
 
   def phoenix_template_render_start(_event, _measurements, metadata, _config) do
