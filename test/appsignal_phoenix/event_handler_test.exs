@@ -33,6 +33,11 @@ defmodule Appsignal.Phoenix.EventHandlerTest do
     test "finishes an event" do
       assert {:ok, [{%Span{}}]} = Test.Tracer.get(:close_span)
     end
+
+    test "sets the root span's parameters" do
+      assert {:ok, [{%Span{}, "params", %{"foo" => "bar"}}]} = Test.Span.get(:set_sample_data)
+    end
+
   end
 
   describe "after receiving an endpoint-start and an router_dispatch-exception event" do
@@ -152,7 +157,7 @@ defmodule Appsignal.Phoenix.EventHandlerTest do
       %{duration: 49_474_000},
       %{
         conn: %Plug.Conn{
-          status: 200,
+          params: %{"foo" => "bar"},
           private: %{
             phoenix_action: :index,
             phoenix_controller: AppsignalPhoenixExampleWeb.PageController

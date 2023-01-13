@@ -46,7 +46,7 @@ defmodule Appsignal.Phoenix.EventHandler do
 
   def phoenix_endpoint_stop(_event, _measurements, %{conn: conn}, _config) do
     @tracer.current_span()
-    |> set_name(conn)
+    |> set_conn_data(conn)
     |> @tracer.close_span()
   end
 
@@ -60,15 +60,17 @@ defmodule Appsignal.Phoenix.EventHandler do
 
   defp add_error(span, conn, reason, stack) do
     span
-    |> set_name(conn)
+    |> set_conn_data(conn)
     |> @span.add_error(:error, reason, stack)
     |> @tracer.close_span()
 
     @tracer.ignore()
   end
 
-  defp set_name(span, %Plug.Conn{private: %{phoenix_action: action, phoenix_controller: controller}}) do
-    @span.set_name(span, "#{module_name(controller)}##{action}")
+  defp set_conn_data(span, %Plug.Conn{params: params, private: %{phoenix_action: action, phoenix_controller: controller}}) do
+    span
+    |> @span.set_name("#{module_name(controller)}##{action}")
+    |> @span.set_sample_data("params", params)
   end
 
   def phoenix_template_render_start(_event, _measurements, metadata, _config) do
