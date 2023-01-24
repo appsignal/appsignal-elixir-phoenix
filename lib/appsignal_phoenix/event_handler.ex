@@ -50,11 +50,21 @@ defmodule Appsignal.Phoenix.EventHandler do
     |> @tracer.close_span()
   end
 
-  def phoenix_router_dispatch_exception(_event, _measurements, %{reason: %Plug.Conn.WrapperError{conn: conn, reason: reason, stack: stack}}, _config) do
+  def phoenix_router_dispatch_exception(
+        _event,
+        _measurements,
+        %{reason: %Plug.Conn.WrapperError{conn: conn, reason: reason, stack: stack}},
+        _config
+      ) do
     add_error(@tracer.root_span(), conn, reason, stack)
   end
 
-  def phoenix_router_dispatch_exception(_event, _measurements, %{conn: conn, reason: reason, stack: stack}, _config) do
+  def phoenix_router_dispatch_exception(
+        _event,
+        _measurements,
+        %{conn: conn, reason: reason, stack: stack},
+        _config
+      ) do
     add_error(@tracer.root_span(), conn, reason, stack)
   end
 

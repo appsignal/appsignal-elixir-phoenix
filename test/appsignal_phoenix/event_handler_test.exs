@@ -68,7 +68,7 @@ defmodule Appsignal.Phoenix.EventHandlerTest do
         [:phoenix, :router_dispatch, :exception],
         %{duration: 49_474_000},
         %{
-          conn: %Plug.Conn{private: %{phoenix_action: :index, phoenix_controller: AppsignalPhoenixExampleWeb.PageController}},
+          conn: conn(),
           reason: %RuntimeError{},
           stack: [],
           options: []
@@ -99,9 +99,9 @@ defmodule Appsignal.Phoenix.EventHandlerTest do
         %{duration: 49_474_000},
         %{
           reason: %Plug.Conn.WrapperError{
-            conn: %Plug.Conn{private: %{phoenix_action: :index, phoenix_controller: AppsignalPhoenixExampleWeb.PageController}},
+            conn: conn(),
             reason: %RuntimeError{},
-            stack: [],
+            stack: []
           },
           options: []
         }
@@ -175,19 +175,7 @@ defmodule Appsignal.Phoenix.EventHandlerTest do
     :telemetry.execute(
       [:phoenix, :endpoint, :stop],
       %{duration: 49_474_000},
-      %{
-        conn: %Plug.Conn{
-          params: %{"foo" => "bar"},
-          private: %{
-            phoenix_action: :index,
-            phoenix_controller: AppsignalPhoenixExampleWeb.PageController
-          },
-          port: 80,
-          request_path: "/",
-          status: 200
-        },
-        options: []
-      }
+      %{conn: conn(), options: []}
     )
   end
 
@@ -213,5 +201,18 @@ defmodule Appsignal.Phoenix.EventHandlerTest do
       %{duration: 49_474_000},
       %{}
     )
+  end
+
+  defp conn do
+    %Plug.Conn{
+      params: %{"foo" => "bar"},
+      private: %{
+        phoenix_action: :index,
+        phoenix_controller: AppsignalPhoenixExampleWeb.PageController
+      },
+      port: 80,
+      request_path: "/",
+      status: 200
+    }
   end
 end
