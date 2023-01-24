@@ -88,6 +88,31 @@ defmodule Appsignal.Phoenix.EventHandlerTest do
     test "closes the root span" do
       assert {:ok, [{%Span{}}]} = Test.Tracer.get(:close_span)
     end
+
+    test "sets the root span's parameters" do
+      {:ok, calls} = Test.Span.get(:set_sample_data)
+
+      [{%Span{}, "params", params}] =
+        Enum.filter(calls, fn {_span, key, _value} -> key == "params" end)
+
+      assert %{"foo" => "bar"} == params
+    end
+
+    test "sets the root span's sample data" do
+      {:ok, calls} = Test.Span.get(:set_sample_data)
+
+      [{%Span{}, "environment", environment}] =
+        Enum.filter(calls, fn {_span, key, _value} -> key == "environment" end)
+
+      assert %{
+               "host" => "www.example.com",
+               "method" => "GET",
+               "port" => 80,
+               "request_id" => nil,
+               "request_path" => "/",
+               "status" => 200
+             } == environment
+    end
   end
 
   describe "after receiving an endpoint-start and a wrapped router_dispatch-exception event" do
