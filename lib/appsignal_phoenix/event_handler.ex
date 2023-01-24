@@ -67,10 +67,17 @@ defmodule Appsignal.Phoenix.EventHandler do
     @tracer.ignore()
   end
 
-  defp set_conn_data(span, %Plug.Conn{params: params, private: %{phoenix_action: action, phoenix_controller: controller}}) do
+  defp set_conn_data(
+         span,
+         conn = %Plug.Conn{
+           params: params,
+           private: %{phoenix_action: action, phoenix_controller: controller}
+         }
+       ) do
     span
     |> @span.set_name("#{module_name(controller)}##{action}")
     |> @span.set_sample_data("params", params)
+    |> @span.set_sample_data("environment", Appsignal.Metadata.metadata(conn))
   end
 
   def phoenix_template_render_start(_event, _measurements, metadata, _config) do

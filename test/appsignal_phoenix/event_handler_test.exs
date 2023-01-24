@@ -35,9 +35,29 @@ defmodule Appsignal.Phoenix.EventHandlerTest do
     end
 
     test "sets the root span's parameters" do
-      assert {:ok, [{%Span{}, "params", %{"foo" => "bar"}}]} = Test.Span.get(:set_sample_data)
+      {:ok, calls} = Test.Span.get(:set_sample_data)
+
+      [{%Span{}, "params", params}] =
+        Enum.filter(calls, fn {_span, key, _value} -> key == "params" end)
+
+      assert %{"foo" => "bar"} == params
     end
 
+    test "sets the root span's sample data" do
+      {:ok, calls} = Test.Span.get(:set_sample_data)
+
+      [{%Span{}, "environment", environment}] =
+        Enum.filter(calls, fn {_span, key, _value} -> key == "environment" end)
+
+      assert %{
+               "host" => "www.example.com",
+               "method" => "GET",
+               "port" => 80,
+               "request_id" => nil,
+               "request_path" => "/",
+               "status" => 200
+             } == environment
+    end
   end
 
   describe "after receiving an endpoint-start and an router_dispatch-exception event" do
@@ -161,7 +181,10 @@ defmodule Appsignal.Phoenix.EventHandlerTest do
           private: %{
             phoenix_action: :index,
             phoenix_controller: AppsignalPhoenixExampleWeb.PageController
-          }
+          },
+          port: 80,
+          request_path: "/",
+          status: 200
         },
         options: []
       }
