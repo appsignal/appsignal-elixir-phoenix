@@ -34,15 +34,6 @@ defmodule Appsignal.Phoenix.EventHandlerTest do
       assert {:ok, [{%Span{}}]} = Test.Tracer.get(:close_span)
     end
 
-    test "sets the root span's parameters" do
-      {:ok, calls} = Test.Span.get(:set_sample_data)
-
-      [{%Span{}, "params", params}] =
-        Enum.filter(calls, fn {_span, key, _value} -> key == "params" end)
-
-      assert %{"foo" => "bar"} == params
-    end
-
     test "sets the root span's sample data" do
       {:ok, calls} = Test.Span.get(:set_sample_data)
 
@@ -87,15 +78,6 @@ defmodule Appsignal.Phoenix.EventHandlerTest do
 
     test "closes the root span" do
       assert {:ok, [{%Span{}}]} = Test.Tracer.get(:close_span)
-    end
-
-    test "sets the root span's parameters" do
-      {:ok, calls} = Test.Span.get(:set_sample_data)
-
-      [{%Span{}, "params", params}] =
-        Enum.filter(calls, fn {_span, key, _value} -> key == "params" end)
-
-      assert %{"foo" => "bar"} == params
     end
 
     test "sets the root span's sample data" do
