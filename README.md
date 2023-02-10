@@ -57,3 +57,5 @@ end
 
 For more information, check out the [Integrating AppSignal into
 Phoenix](https://docs.appsignal.com/elixir/integrations/phoenix.html) guide.
+
+Test
