@@ -27,6 +27,16 @@ defmodule PhoenixWeb.Controller do
   end
 end
 
+if function_exported?(Phoenix.View, :__info__, 1) do
+  defmodule PhoenixWeb.View do
+    use Phoenix.View,
+      root: "test/support",
+      namespace: AppsignalPhoenixExampleWeb
+
+    use Appsignal.Phoenix.View
+  end
+end
+
 defmodule PhoenixWeb.Channel do
   use Phoenix.Channel
   require Appsignal.Phoenix.Channel
