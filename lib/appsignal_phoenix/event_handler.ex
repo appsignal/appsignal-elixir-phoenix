@@ -56,7 +56,7 @@ defmodule Appsignal.Phoenix.EventHandler do
         %{reason: %Plug.Conn.WrapperError{conn: conn, reason: reason, stack: stack}},
         _config
       ) do
-    add_error(@tracer.root_span(), conn, reason, stack)
+    handle_error(@tracer.root_span(), conn, reason, stack)
   end
 
   def phoenix_router_dispatch_exception(
@@ -65,10 +65,14 @@ defmodule Appsignal.Phoenix.EventHandler do
         %{conn: conn, reason: reason, stacktrace: stack},
         _config
       ) do
-    add_error(@tracer.root_span(), conn, reason, stack)
+    handle_error(@tracer.root_span(), conn, reason, stack)
   end
 
-  defp add_error(span, conn, reason, stack) do
+  defp handle_error(_span, _conn, %{plug_status: status}, _stack) when status < 500 do
+    @tracer.ignore()
+  end
+
+  defp handle_error(span, conn, reason, stack) do
     span
     |> @span.add_error(:error, reason, stack)
     |> Appsignal.Plug.set_conn_data(conn)

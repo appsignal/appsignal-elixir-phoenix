@@ -105,11 +105,13 @@ defmodule Appsignal.Phoenix.EventHandlerTest do
         [:phoenix, :router_dispatch, :exception],
         %{duration: 49_474_000},
         %{
+          conn: :wrapped,
           reason: %Plug.Conn.WrapperError{
             conn: conn(),
             reason: %RuntimeError{},
             stack: []
           },
+          stacktrace: :wrapped,
           options: []
         }
       )
@@ -126,6 +128,35 @@ defmodule Appsignal.Phoenix.EventHandlerTest do
 
     test "closes the root span" do
       assert {:ok, [{%Span{}}]} = Test.Tracer.get(:close_span)
+    end
+  end
+
+  describe "after receiving an endpoint-start and a 4xx router_dispatch-exception event" do
+    setup [:create_root_span, :endpoint_start_event]
+
+    setup do
+      :telemetry.execute(
+        [:phoenix, :router_dispatch, :exception],
+        %{duration: 49_474_000},
+        %{
+          conn: conn(),
+          reason: %{plug_status: 400},
+          stacktrace: [],
+          options: []
+        }
+      )
+    end
+
+    test "does not the root span's name" do
+      assert :error = Test.Span.get(:set_name)
+    end
+
+    test "does not set an error" do
+      assert :error = Test.Span.get(:add_error)
+    end
+
+    test "does not cloe the root span" do
+      assert :error = Test.Tracer.get(:close_span)
     end
   end
 
