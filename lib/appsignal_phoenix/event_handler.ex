@@ -68,6 +68,10 @@ defmodule Appsignal.Phoenix.EventHandler do
     handle_error(@tracer.root_span(), conn, reason, stack)
   end
 
+  defp handle_error(_span, _conn, %{plug_status: status}, _stack) when status < 500 do
+    @tracer.ignore()
+  end
+
   defp handle_error(span, conn, reason, stack) do
     span
     |> @span.add_error(:error, reason, stack)
