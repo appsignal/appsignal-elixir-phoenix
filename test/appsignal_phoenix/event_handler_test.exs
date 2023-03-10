@@ -105,11 +105,13 @@ defmodule Appsignal.Phoenix.EventHandlerTest do
         [:phoenix, :router_dispatch, :exception],
         %{duration: 49_474_000},
         %{
+	  conn: :wrapped,
           reason: %Plug.Conn.WrapperError{
             conn: conn(),
             reason: %RuntimeError{},
             stack: []
           },
+	  stacktrace: :wrapped,
           options: []
         }
       )
