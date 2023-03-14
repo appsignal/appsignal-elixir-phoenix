@@ -68,6 +68,19 @@ defmodule Appsignal.Phoenix.EventHandler do
     add_error(@tracer.root_span(), conn, reason, stack)
   end
 
+  def phoenix_router_dispatch_exception(
+        _event,
+        _measurements,
+        metadata,
+        _config
+      ) do
+    Logger.warn("""
+      "Appsignal.Phoenix.EventHandler failed to add error with metadata:
+
+      #{inspect(metadata)}
+      """)
+  end
+
   defp add_error(span, conn, reason, stack) do
     span
     |> @span.add_error(:error, reason, stack)

@@ -129,6 +129,30 @@ defmodule Appsignal.Phoenix.EventHandlerTest do
     end
   end
 
+  describe "after receiving an endpoint-start with a router_dispatch-exception event that doesn't match" do
+    setup [:create_root_span, :endpoint_start_event]
+
+    setup do
+      :telemetry.execute(
+        [:phoenix, :router_dispatch, :exception],
+        %{duration: 49_474_000},
+        %{}
+      )
+    end
+
+    test "does not set the root span's name" do
+      assert :error = Test.Span.get(:set_name)
+    end
+
+    test "does not set the root span's error" do
+      assert :error = Test.Span.get(:add_error)
+    end
+
+    test "does not close the root span" do
+      assert :error = Test.Tracer.get(:close_span)
+    end
+  end
+
   describe "after receiving an render-start event" do
     setup [:create_root_span, :render_start_event]
 
