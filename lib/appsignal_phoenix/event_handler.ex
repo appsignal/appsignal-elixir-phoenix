@@ -9,10 +9,10 @@ defmodule Appsignal.Phoenix.EventHandler do
   def attach do
     handlers = %{
       [:phoenix, :endpoint, :start] => &__MODULE__.phoenix_endpoint_start/4,
-      [:phoenix, :endpoint, :stop] => &__MODULE__.phoenix_endpoint_stop/4,
       [:phoenix, :controller, :render, :start] => &__MODULE__.phoenix_template_render_start/4,
       [:phoenix, :controller, :render, :stop] => &__MODULE__.phoenix_template_render_stop/4,
       [:phoenix, :controller, :render, :exception] => &__MODULE__.phoenix_template_render_stop/4,
+      [:phoenix, :router_dispatch, :stop] => &__MODULE__.phoenix_router_dispatch_stop/4,
       [:phoenix, :router_dispatch, :exception] => &__MODULE__.phoenix_router_dispatch_exception/4
     }
 
@@ -44,10 +44,19 @@ defmodule Appsignal.Phoenix.EventHandler do
     |> @span.set_attribute("appsignal:category", "call.phoenix_endpoint")
   end
 
-  def phoenix_endpoint_stop(_event, _measurements, %{conn: conn}, _config) do
+  def phoenix_router_dispatch_stop(_event, _measurements, %{conn: conn} = metadata, _config) do
     @tracer.current_span()
     |> Appsignal.Plug.set_conn_data(conn)
+    |> set_name(metadata)
     |> @tracer.close_span()
+  end
+
+  defp set_name(span, %{conn: %{method: method}, route: route}) do
+    @span.set_name(span, "#{method} #{route}")
+  end
+
+  defp set_name(span, %{conn: conn}) do
+    @span.set_name(span, Appsignal.Metadata.name(conn))
   end
 
   def phoenix_router_dispatch_exception(
