@@ -44,9 +44,9 @@ defmodule Appsignal.Phoenix.EventHandler do
     |> @span.set_attribute("appsignal:category", "call.phoenix_endpoint")
   end
 
-  def phoenix_endpoint_stop(_event, _measurements, %{conn: conn}, _config) do
+  def phoenix_endpoint_stop(_event, _measurements, metadata, _config) do
     @tracer.current_span()
-    |> Appsignal.Plug.set_conn_data(conn)
+    |> set_span_data(metadata)
     |> @tracer.close_span()
   end
 
@@ -71,7 +71,7 @@ defmodule Appsignal.Phoenix.EventHandler do
   defp add_error(span, conn, reason, stack) do
     span
     |> @span.add_error(:error, reason, stack)
-    |> Appsignal.Plug.set_conn_data(conn)
+    |> set_span_data(%{conn: conn})
     |> @tracer.close_span()
 
     @tracer.ignore()
@@ -90,6 +90,14 @@ defmodule Appsignal.Phoenix.EventHandler do
 
   def phoenix_template_render_stop(_event, _measurements, _metadata, _config) do
     @tracer.close_span(@tracer.current_span())
+  end
+
+  defp set_span_data(span, %{conn: conn}) do
+    span
+    |> @span.set_name(Appsignal.Metadata.name(conn))
+    |> @span.set_sample_data("params", Appsignal.Metadata.params(conn))
+    |> @span.set_sample_data("environment", Appsignal.Metadata.metadata(conn))
+    |> @span.set_sample_data("session_data", Appsignal.Metadata.session(conn))
   end
 
   defp module_name("Elixir." <> module), do: module
