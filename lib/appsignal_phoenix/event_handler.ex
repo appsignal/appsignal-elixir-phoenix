@@ -8,12 +8,12 @@ defmodule Appsignal.Phoenix.EventHandler do
 
   def attach do
     handlers = %{
-      [:phoenix, :endpoint, :start] => &__MODULE__.phoenix_endpoint_start/4,
-      [:phoenix, :endpoint, :stop] => &__MODULE__.phoenix_endpoint_stop/4,
+      [:phoenix, :router_dispatch, :start] => &__MODULE__.phoenix_router_dispatch_start/4,
+      [:phoenix, :router_dispatch, :stop] => &__MODULE__.phoenix_router_dispatch_stop/4,
+      [:phoenix, :router_dispatch, :exception] => &__MODULE__.phoenix_router_dispatch_exception/4,
       [:phoenix, :controller, :render, :start] => &__MODULE__.phoenix_template_render_start/4,
       [:phoenix, :controller, :render, :stop] => &__MODULE__.phoenix_template_render_stop/4,
-      [:phoenix, :controller, :render, :exception] => &__MODULE__.phoenix_template_render_stop/4,
-      [:phoenix, :router_dispatch, :exception] => &__MODULE__.phoenix_router_dispatch_exception/4
+      [:phoenix, :controller, :render, :exception] => &__MODULE__.phoenix_template_render_stop/4
     }
 
     for {event, fun} <- handlers do
@@ -36,15 +36,15 @@ defmodule Appsignal.Phoenix.EventHandler do
     end
   end
 
-  def phoenix_endpoint_start(_event, _measurements, _metadata, _config) do
+  def phoenix_router_dispatch_start(_event, _measurements, _metadata, _config) do
     parent = @tracer.current_span()
 
     "http_request"
     |> @tracer.create_span(parent)
-    |> @span.set_attribute("appsignal:category", "call.phoenix_endpoint")
+    |> @span.set_attribute("appsignal:category", "call.phoenix_router_dispatch")
   end
 
-  def phoenix_endpoint_stop(_event, _measurements, metadata, _config) do
+  def phoenix_router_dispatch_stop(_event, _measurements, metadata, _config) do
     @tracer.current_span()
     |> set_span_data(metadata)
     |> @tracer.close_span()
@@ -92,12 +92,24 @@ defmodule Appsignal.Phoenix.EventHandler do
     @tracer.close_span(@tracer.current_span())
   end
 
-  defp set_span_data(span, %{conn: conn}) do
+  defp set_span_data(span, %{conn: conn} = metadata) do
     span
-    |> @span.set_name(Appsignal.Metadata.name(conn))
+    |> @span.set_name(name(metadata))
     |> @span.set_sample_data("params", Appsignal.Metadata.params(conn))
     |> @span.set_sample_data("environment", Appsignal.Metadata.metadata(conn))
     |> @span.set_sample_data("session_data", Appsignal.Metadata.session(conn))
+  end
+
+  defp name(%{conn: conn} = metadata) do
+    Appsignal.Metadata.name(conn) || extract_name(metadata)
+  end
+
+  defp extract_name(%{conn: %{method: method}, route: route}) do
+    "#{method} #{route}"
+  end
+
+  defp extract_name(_) do
+    nil
   end
 
   defp module_name("Elixir." <> module), do: module

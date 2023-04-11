@@ -9,21 +9,21 @@ defmodule Appsignal.Phoenix.EventHandlerTest do
     :ok
   end
 
-  describe "after receiving an endpoint-start event" do
-    setup [:create_root_span, :endpoint_start_event]
+  describe "after receiving an router_dispatch-start event" do
+    setup [:create_root_span, :router_dispatch_start_event]
 
     test "starts a child span", %{span: parent} do
       assert {:ok, [{"http_request", ^parent}]} = Test.Tracer.get(:create_span)
     end
 
     test "sets the span's category" do
-      assert {:ok, [{%Span{}, "appsignal:category", "call.phoenix_endpoint"}]} =
+      assert {:ok, [{%Span{}, "appsignal:category", "call.phoenix_router_dispatch"}]} =
                Test.Span.get(:set_attribute)
     end
   end
 
-  describe "after receiving an endpoint-start and an endpoint-stop event" do
-    setup [:create_root_span, :endpoint_start_event, :endpoint_finish_event]
+  describe "after receiving an router_dispatch-start and an router_dispatch-stop event" do
+    setup [:create_root_span, :router_dispatch_start_event, :router_dispatch_finish_event]
 
     test "sets the span's name" do
       assert {:ok, [{%Span{}, "AppsignalPhoenixExampleWeb.PageController#index"}]} =
@@ -31,7 +31,7 @@ defmodule Appsignal.Phoenix.EventHandlerTest do
     end
 
     test "sets the root span's category" do
-      assert {:ok, [{%Span{}, "appsignal:category", "call.phoenix_endpoint"}]} =
+      assert {:ok, [{%Span{}, "appsignal:category", "call.phoenix_router_dispatch"}]} =
                Test.Span.get(:set_attribute)
     end
 
@@ -65,8 +65,24 @@ defmodule Appsignal.Phoenix.EventHandlerTest do
     end
   end
 
-  describe "after receiving an endpoint-start and an router_dispatch-exception event" do
-    setup [:create_root_span, :endpoint_start_event]
+  describe "after receiving an router_dispatch-start and an router_dispatch-stop event without an event name in the conn" do
+    setup [:create_root_span, :router_dispatch_start_event]
+
+    setup do
+      :telemetry.execute(
+        [:phoenix, :router_dispatch, :stop],
+        %{duration: 49_474_000},
+        %{conn: %Plug.Conn{}, route: "/foo/:bar", options: []}
+      )
+    end
+
+    test "sets the span's name" do
+      assert {:ok, [{%Span{}, "GET /foo/:bar"}]} = Test.Span.get(:set_name)
+    end
+  end
+
+  describe "after receiving an router_dispatch-start and an router_dispatch-exception event" do
+    setup [:create_root_span, :router_dispatch_start_event]
 
     setup do
       :telemetry.execute(
@@ -111,8 +127,8 @@ defmodule Appsignal.Phoenix.EventHandlerTest do
     end
   end
 
-  describe "after receiving an endpoint-start and a wrapped router_dispatch-exception event" do
-    setup [:create_root_span, :endpoint_start_event]
+  describe "after receiving an router_dispatch-start and a wrapped router_dispatch-exception event" do
+    setup [:create_root_span, :router_dispatch_start_event]
 
     setup do
       :telemetry.execute(
@@ -181,9 +197,9 @@ defmodule Appsignal.Phoenix.EventHandlerTest do
     [span: Tracer.create_span("http_request")]
   end
 
-  def endpoint_start_event(_context) do
+  def router_dispatch_start_event(_context) do
     :telemetry.execute(
-      [:phoenix, :endpoint, :start],
+      [:phoenix, :router_dispatch, :start],
       %{time: -576_460_736_044_040_000},
       %{
         conn: %Plug.Conn{private: %{phoenix_endpoint: PhoenixWeb.Endpoint}},
@@ -192,11 +208,11 @@ defmodule Appsignal.Phoenix.EventHandlerTest do
     )
   end
 
-  def endpoint_finish_event(_context) do
+  def router_dispatch_finish_event(_context) do
     :telemetry.execute(
-      [:phoenix, :endpoint, :stop],
+      [:phoenix, :router_dispatch, :stop],
       %{duration: 49_474_000},
-      %{conn: conn(), options: []}
+      %{conn: conn(), route: "/foo/:bar", options: []}
     )
   end
 
