@@ -41,7 +41,7 @@ defmodule Appsignal.Phoenix.EventHandler do
 
     "http_request"
     |> @tracer.create_span(parent)
-    |> @span.set_attribute("appsignal:category", "call.phoenix_router_dispatch")
+    |> @span.set_attribute("appsignal:category", "call.phoenix_endpoint")
   end
 
   def phoenix_router_dispatch_stop(_event, _measurements, metadata, _config) do

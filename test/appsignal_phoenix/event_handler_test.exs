@@ -17,7 +17,7 @@ defmodule Appsignal.Phoenix.EventHandlerTest do
     end
 
     test "sets the span's category" do
-      assert {:ok, [{%Span{}, "appsignal:category", "call.phoenix_router_dispatch"}]} =
+      assert {:ok, [{%Span{}, "appsignal:category", "call.phoenix_endpoint"}]} =
                Test.Span.get(:set_attribute)
     end
   end
@@ -31,7 +31,7 @@ defmodule Appsignal.Phoenix.EventHandlerTest do
     end
 
     test "sets the root span's category" do
-      assert {:ok, [{%Span{}, "appsignal:category", "call.phoenix_router_dispatch"}]} =
+      assert {:ok, [{%Span{}, "appsignal:category", "call.phoenix_endpoint"}]} =
                Test.Span.get(:set_attribute)
     end
 
