@@ -27,7 +27,7 @@ defmodule Appsignal.Phoenix.EventHandler do
           :ok
 
         {:error, _} = error ->
-          Logger.warn(
+          Logger.warning(
             "Appsignal.Phoenix.EventHandler not attached to #{inspect(event)}: #{inspect(error)}"
           )
 
