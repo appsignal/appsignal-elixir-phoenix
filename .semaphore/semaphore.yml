@@ -48,9 +48,13 @@ blocks:
           commands:
             - "ERLANG_VERSION=26.0.1 ELIXIR_VERSION=1.14.5 PHOENIX_VERSION=\"~> 1.7.3\" . bin/setup"
             - mix test
-        - name: Elixir 1.15.0-rc.2, OTP 26.0.1, Phoenix ~> 1.7.3
+        - name: Elixir 1.15.0-rc.2, OTP 25.3.2.2, Phoenix ~> 1.7.4
           commands:
-            - "ERLANG_VERSION=26.0.1 ELIXIR_VERSION=1.15.0-rc.2 PHOENIX_VERSION=\"~> 1.7.3\" . bin/setup"
+            - "ERLANG_VERSION=25.3.2.2 ELIXIR_VERSION=1.15.0-rc.2 PHOENIX_VERSION=\"~> 1.7.4\" . bin/setup"
+            - mix test
+        - name: Elixir 1.15.0-rc.2, OTP 26.0.1, Phoenix ~> 1.7.4
+          commands:
+            - "ERLANG_VERSION=26.0.1 ELIXIR_VERSION=1.15.0-rc.2 PHOENIX_VERSION=\"~> 1.7.4\" . bin/setup"
             - mix test
         - name: Elixir 1.14.3, OTP 25.2, Phoenix ~> 1.7.0
           commands:
