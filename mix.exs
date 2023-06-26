@@ -12,7 +12,7 @@ defmodule Appsignal.Phoenix.MixProject do
         licenses: ["MIT"],
         links: %{"GitHub" => "https://github.com/appsignal/appsignal-elixir-phoenix"}
       },
-      elixir: "~> 1.9",
+      elixir: "~> 1.11",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       elixirc_paths: elixirc_paths(Mix.env()),
