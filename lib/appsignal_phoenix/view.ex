@@ -42,9 +42,9 @@ defmodule Appsignal.Phoenix.View do
     quote do
       if Module.defines?(__MODULE__, {:__templates__, 0}) &&
            Module.defines?(__MODULE__, {:render, 2}) do
-        require Appsignal.Utils
-        @span Appsignal.Utils.compile_env(:appsignal, :appsignal_span, Appsignal.Span)
-        @tracer Appsignal.Utils.compile_env(:appsignal, :appsignal_tracer, Appsignal.Tracer)
+        require Application
+        @span Application.compile_env(:appsignal, :appsignal_span, Appsignal.Span)
+        @tracer Application.compile_env(:appsignal, :appsignal_tracer, Appsignal.Tracer)
 
         defoverridable render: 2
 

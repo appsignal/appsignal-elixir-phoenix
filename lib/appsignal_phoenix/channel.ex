@@ -28,9 +28,9 @@ defmodule Appsignal.Phoenix.Channel do
 
   """
 
-  require Appsignal.Utils
-  @tracer Appsignal.Utils.compile_env(:appsignal, :appsignal_tracer, Appsignal.Tracer)
-  @span Appsignal.Utils.compile_env(:appsignal, :appsignal_span, Appsignal.Span)
+  require Application
+  @tracer Application.compile_env(:appsignal, :appsignal_tracer, Appsignal.Tracer)
+  @span Application.compile_env(:appsignal, :appsignal_span, Appsignal.Span)
 
   def instrument(module, name, socket, fun) do
     instrument(module, name, %{}, socket, fun)
