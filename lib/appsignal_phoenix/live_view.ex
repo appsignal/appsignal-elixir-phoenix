@@ -50,7 +50,8 @@ defmodule Appsignal.Phoenix.LiveView do
     instrument(module, name, params, socket, function)
   end
 
-  def attach do
+  def attach(fun \\ nil) do
+
     [
       [:phoenix, :live_view, :mount],
       [:phoenix, :live_view, :handle_params],
@@ -65,7 +66,7 @@ defmodule Appsignal.Phoenix.LiveView do
           {__MODULE__, event ++ [:start]},
           event ++ [:start],
           &__MODULE__.handle_event_start/4,
-          name
+          {name, fun}
         )
 
       _ =
@@ -90,11 +91,12 @@ defmodule Appsignal.Phoenix.LiveView do
         [:phoenix, _type, name, :start],
         %{system_time: system_time},
         metadata,
-        _event_name
+        {_event_name, fun}
       ) do
     "live_view"
     |> @tracer.create_span(nil, start_time: system_time)
     |> @span.set_name("#{Appsignal.Utils.module_name(metadata[:socket].view)}##{name}")
+    |> execute_fun(fun)
     |> @span.set_attribute("appsignal:category", "#{name}.live_view")
     |> @span.set_attribute("event", metadata[:event])
     |> @span.set_sample_data("params", metadata[:params])
@@ -112,4 +114,7 @@ defmodule Appsignal.Phoenix.LiveView do
 
     @tracer.ignore()
   end
+
+  def execute_fun(nil, _fun), do: nil
+  def execute_fun(span, fun), do: fun.(span)
 end
