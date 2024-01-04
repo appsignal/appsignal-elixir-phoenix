@@ -114,6 +114,6 @@ defmodule Appsignal.Phoenix.LiveView do
     @tracer.ignore()
   end
 
-  def execute_fun(nil, _fun), do: nil
-  def execute_fun(span, fun), do: fun.(span)
+  defp execute_fun(span, fun) when is_function(fun), do: fun.(span)
+  defp execute_fun(span, _), do: span
 end

@@ -361,7 +361,7 @@ defmodule Appsignal.Phoenix.LiveViewTest do
         {__MODULE__, event},
         event,
         &Appsignal.Phoenix.LiveView.handle_event_start/4,
-        :ok
+        {:ok, nil}
       )
 
       :telemetry.execute(
@@ -417,7 +417,7 @@ defmodule Appsignal.Phoenix.LiveViewTest do
         {__MODULE__, event},
         event,
         &Appsignal.Phoenix.LiveView.handle_event_start/4,
-        :ok
+        {:ok, nil}
       )
 
       :telemetry.execute(
@@ -474,7 +474,7 @@ defmodule Appsignal.Phoenix.LiveViewTest do
         {__MODULE__, event},
         event,
         &Appsignal.Phoenix.LiveView.handle_event_start/4,
-        :ok
+        {:ok, nil}
       )
 
       :telemetry.execute(
