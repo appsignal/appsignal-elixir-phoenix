@@ -270,6 +270,89 @@ defmodule Appsignal.Phoenix.LiveViewTest do
     end
   end
 
+  describe "attach/1" do
+    setup do
+      fun = fn span ->
+        Span.set_sample_data(span, "custom_data", %{custom: "data"})
+      end
+
+      Appsignal.Phoenix.LiveView.attach(fun)
+
+      on_exit(fn ->
+        :ok =
+          :telemetry.detach({Appsignal.Phoenix.LiveView, [:phoenix, :live_view, :mount, :start]})
+
+        :ok =
+          :telemetry.detach({Appsignal.Phoenix.LiveView, [:phoenix, :live_view, :mount, :stop]})
+
+        :ok =
+          :telemetry.detach(
+            {Appsignal.Phoenix.LiveView, [:phoenix, :live_view, :mount, :exception]}
+          )
+
+        :ok =
+          :telemetry.detach(
+            {Appsignal.Phoenix.LiveView, [:phoenix, :live_view, :handle_params, :start]}
+          )
+
+        :ok =
+          :telemetry.detach(
+            {Appsignal.Phoenix.LiveView, [:phoenix, :live_view, :handle_params, :stop]}
+          )
+
+        :ok =
+          :telemetry.detach(
+            {Appsignal.Phoenix.LiveView, [:phoenix, :live_view, :handle_params, :exception]}
+          )
+
+        :ok =
+          :telemetry.detach(
+            {Appsignal.Phoenix.LiveView, [:phoenix, :live_view, :handle_event, :start]}
+          )
+
+        :ok =
+          :telemetry.detach(
+            {Appsignal.Phoenix.LiveView, [:phoenix, :live_view, :handle_event, :stop]}
+          )
+
+        :ok =
+          :telemetry.detach(
+            {Appsignal.Phoenix.LiveView, [:phoenix, :live_view, :handle_event, :exception]}
+          )
+
+        :ok =
+          :telemetry.detach(
+            {Appsignal.Phoenix.LiveView, [:phoenix, :live_component, :handle_event, :start]}
+          )
+
+        :ok =
+          :telemetry.detach(
+            {Appsignal.Phoenix.LiveView, [:phoenix, :live_component, :handle_event, :stop]}
+          )
+
+        :ok =
+          :telemetry.detach(
+            {Appsignal.Phoenix.LiveView, [:phoenix, :live_component, :handle_event, :exception]}
+          )
+      end)
+    end
+
+    test "attach/1 attaches to LiveView events" do
+      assert attached?([:phoenix, :live_view, :mount, :start])
+      assert attached?([:phoenix, :live_view, :mount, :stop])
+      assert attached?([:phoenix, :live_view, :mount, :exception])
+      assert attached?([:phoenix, :live_view, :handle_params, :start])
+      assert attached?([:phoenix, :live_view, :handle_params, :stop])
+      assert attached?([:phoenix, :live_view, :handle_params, :exception])
+      assert attached?([:phoenix, :live_view, :handle_event, :start])
+      assert attached?([:phoenix, :live_view, :handle_event, :stop])
+      assert attached?([:phoenix, :live_view, :handle_event, :exception])
+      assert attached?([:phoenix, :live_component, :handle_event, :start])
+      assert attached?([:phoenix, :live_component, :handle_event, :stop])
+      assert attached?([:phoenix, :live_component, :handle_event, :exception])
+    end
+  end
+
   describe "handle_event_start/4, with a mount event" do
     setup do
       event = [:phoenix, :live_view, :mount, :start]
@@ -278,7 +361,7 @@ defmodule Appsignal.Phoenix.LiveViewTest do
         {__MODULE__, event},
         event,
         &Appsignal.Phoenix.LiveView.handle_event_start/4,
-        :ok
+        {:ok, nil}
       )
 
       :telemetry.execute(
@@ -334,7 +417,7 @@ defmodule Appsignal.Phoenix.LiveViewTest do
         {__MODULE__, event},
         event,
         &Appsignal.Phoenix.LiveView.handle_event_start/4,
-        :ok
+        {:ok, nil}
       )
 
       :telemetry.execute(
@@ -391,7 +474,7 @@ defmodule Appsignal.Phoenix.LiveViewTest do
         {__MODULE__, event},
         event,
         &Appsignal.Phoenix.LiveView.handle_event_start/4,
-        :ok
+        {:ok, nil}
       )
 
       :telemetry.execute(
