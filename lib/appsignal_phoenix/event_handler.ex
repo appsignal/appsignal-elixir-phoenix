@@ -45,7 +45,7 @@ defmodule Appsignal.Phoenix.EventHandler do
   end
 
   def phoenix_endpoint_stop(_event, _measurements, metadata, _config) do
-    set_span_data(@tracer.root_span(), metadata)
+    _root_span = set_span_data(@tracer.root_span(), metadata)
 
     @tracer.current_span()
     |> @tracer.close_span()
