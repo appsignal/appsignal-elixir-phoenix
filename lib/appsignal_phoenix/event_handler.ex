@@ -59,7 +59,7 @@ defmodule Appsignal.Phoenix.EventHandler do
     |> @span.set_attribute("appsignal:category", "call.phoenix_router_dispatch")
   end
 
-  def phoenix_router_dispatch_stop(_event, _measurements, metadata, _config) do
+  def phoenix_router_dispatch_stop(_event, _measurements, _metadata, _config) do
     @tracer.current_span()
     |> @tracer.close_span()
   end
