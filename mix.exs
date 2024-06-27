@@ -40,12 +40,6 @@ defmodule Appsignal.Phoenix.MixProject do
     system_version = System.version()
     otp_version = System.otp_release()
 
-    hackney_version =
-      case otp_version >= "21" do
-        true -> "~> 1.6"
-        false -> "1.18.1"
-      end
-
     mime_and_plug_dependencies =
       if Mix.env() == :test || Mix.env() == :test_no_nif do
         case Version.compare(system_version, "1.10.0") do
@@ -85,7 +79,7 @@ defmodule Appsignal.Phoenix.MixProject do
       {:credo, credo_version, only: [:dev, :test], runtime: false},
       {:poison, "~> 5.0", only: [:dev, :test], runtime: false},
       {:telemetry, telemetry_version},
-      {:hackney, hackney_version}
+      {:hackney, "~> 1.6"}
     ] ++ mime_and_plug_dependencies
   end
 end
