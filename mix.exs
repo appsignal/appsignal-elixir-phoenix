@@ -39,16 +39,6 @@ defmodule Appsignal.Phoenix.MixProject do
   defp deps do
     system_version = System.version()
 
-    mime_and_plug_dependencies =
-      if Mix.env() == :test || Mix.env() == :test_no_nif do
-        case Version.compare(system_version, "1.10.0") do
-          :lt -> [{:plug, "~> 1.13.0"}, {:mime, "~> 1.0"}]
-          _ -> []
-        end
-      else
-        []
-      end
-
     phoenix_live_view_version =
       case Version.compare(system_version, "1.12.0") do
         :lt -> ">= 0.9.0 and < 0.18.0"
@@ -73,6 +63,6 @@ defmodule Appsignal.Phoenix.MixProject do
       {:poison, "~> 5.0", only: [:dev, :test], runtime: false},
       {:telemetry, "~> 0.4 or ~> 1.0"},
       {:hackney, "~> 1.6"}
-    ] ++ mime_and_plug_dependencies
+    ]
   end
 end
