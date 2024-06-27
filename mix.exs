@@ -38,7 +38,6 @@ defmodule Appsignal.Phoenix.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     system_version = System.version()
-    otp_version = System.otp_release()
 
     mime_and_plug_dependencies =
       if Mix.env() == :test || Mix.env() == :test_no_nif do
@@ -54,12 +53,6 @@ defmodule Appsignal.Phoenix.MixProject do
       case Version.compare(system_version, "1.12.0") do
         :lt -> ">= 0.9.0 and < 0.18.0"
         _ -> "~> 0.9"
-      end
-
-    telemetry_version =
-      case otp_version < "21" do
-        true -> "~> 0.4"
-        false -> "~> 0.4 or ~> 1.0"
       end
 
     credo_version =
@@ -78,7 +71,7 @@ defmodule Appsignal.Phoenix.MixProject do
       {:dialyxir, "~> 1.3.0", only: [:dev, :test], runtime: false},
       {:credo, credo_version, only: [:dev, :test], runtime: false},
       {:poison, "~> 5.0", only: [:dev, :test], runtime: false},
-      {:telemetry, telemetry_version},
+      {:telemetry, "~> 0.4 or ~> 1.0"},
       {:hackney, "~> 1.6"}
     ] ++ mime_and_plug_dependencies
   end
