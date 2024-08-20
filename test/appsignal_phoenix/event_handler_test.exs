@@ -97,6 +97,11 @@ defmodule Appsignal.Phoenix.EventHandlerTest do
   describe "after receiving an router_dispatch-start and an router_dispatch-stop event" do
     setup [:create_root_span, :router_dispatch_start_event, :router_dispatch_finish_event]
 
+    test "sets the span's name" do
+      assert {:ok, [{%Span{}, "AppsignalPhoenixExampleWeb.PageController#index"}]} =
+               Test.Span.get(:set_name_if_nil)
+    end
+
     test "sets the root span's category" do
       assert {:ok, [{%Span{}, "appsignal:category", "call.phoenix_router_dispatch"}]} =
                Test.Span.get(:set_attribute)
@@ -104,6 +109,47 @@ defmodule Appsignal.Phoenix.EventHandlerTest do
 
     test "finishes an event" do
       assert {:ok, [{%Span{}}]} = Test.Tracer.get(:close_span)
+    end
+
+    test "sets the root span's parameters" do
+      {:ok, calls} = Test.Span.get(:set_sample_data_if_nil)
+
+      [{%Span{}, "params", params}] =
+        Enum.filter(calls, fn {_span, key, _value} -> key == "params" end)
+
+      assert %{"foo" => "bar"} == params
+    end
+
+    test "sets the root span's sample data" do
+      {:ok, calls} = Test.Span.get(:set_sample_data_if_nil)
+
+      [{%Span{}, "environment", environment}] =
+        Enum.filter(calls, fn {_span, key, _value} -> key == "environment" end)
+
+      assert %{
+               "host" => "www.example.com",
+               "method" => "GET",
+               "port" => 80,
+               "request_id" => nil,
+               "request_path" => "/",
+               "status" => 200
+             } == environment
+    end
+  end
+
+  describe "after receiving an router_dispatch-start and an router_dispatch-stop event without an event name in the conn" do
+    setup [:create_root_span, :router_dispatch_start_event]
+
+    setup do
+      :telemetry.execute(
+        [:phoenix, :router_dispatch, :stop],
+        %{duration: 49_474_000},
+        %{conn: %Plug.Conn{}, route: "/foo/:bar", options: []}
+      )
+    end
+
+    test "sets the span's name" do
+      assert {:ok, [{%Span{}, "GET /foo/:bar"}]} = Test.Span.get(:set_name_if_nil)
     end
   end
 

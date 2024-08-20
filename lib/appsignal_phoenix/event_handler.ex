@@ -80,12 +80,13 @@ defmodule Appsignal.Phoenix.EventHandler do
     """ end)
   end
 
-  def phoenix_router_dispatch_stop(_event, _measurements, _metadata, _config) do
+  def phoenix_router_dispatch_stop(_event, _measurements, metadata, _config) do
+    _root_span = set_span_data(@tracer.root_span(), metadata)
     span = @tracer.current_span()
 
     Logger.debug(fn -> """
     AppSignal.Phoenix.EventHandler received [:phoenix, :router_dispatch, :stop]:
-      root_span: #{inspect(@tracer.root_span())}
+      root_span: #{inspect(root_span)}
       span: #{inspect(span)}
     """ end)
 
