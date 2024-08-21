@@ -38,59 +38,32 @@ defmodule Appsignal.Phoenix.EventHandler do
   end
 
   def phoenix_endpoint_start(_event, _measurements, _metadata, _config) do
-    parent_span = @tracer.current_span()
+    parent = @tracer.current_span()
 
-    span = "http_request"
-    |> @tracer.create_span(parent_span)
+    "http_request"
+    |> @tracer.create_span(parent)
     |> @span.set_attribute("appsignal:category", "call.phoenix_endpoint")
-
-    Logger.debug(fn -> """
-    AppSignal.Phoenix.EventHandler received [:phoenix, :endpoint, :start]:
-      root_span: #{inspect(@tracer.root_span())}
-      parent_span: #{inspect(parent_span)}
-      span: #{inspect(span)}
-    """ end)
   end
 
   def phoenix_endpoint_stop(_event, _measurements, metadata, _config) do
-    root_span = set_span_data(@tracer.root_span(), metadata)
-    span = @tracer.current_span()
+    _root_span = set_span_data(@tracer.root_span(), metadata)
 
-    Logger.debug(fn -> """
-    AppSignal.Phoenix.EventHandler received [:phoenix, :endpoint, :stop]:
-      root_span: #{inspect(root_span)}
-      span: #{inspect(span)}
-    """ end)
-
-    @tracer.close_span(span)
+    @tracer.current_span()
+    |> @tracer.close_span()
   end
 
   def phoenix_router_dispatch_start(_event, _measurements, _metadata, _config) do
-    parent_span = @tracer.current_span()
+    parent = @tracer.current_span()
 
-    span = "http_request"
-    |> @tracer.create_span(parent_span)
+    "http_request"
+    |> @tracer.create_span(parent)
     |> @span.set_attribute("appsignal:category", "call.phoenix_router_dispatch")
-
-    Logger.debug(fn -> """
-    AppSignal.Phoenix.EventHandler received [:phoenix, :router_dispatch, :start]:
-      root_span: #{inspect(@tracer.root_span())}
-      parent_span: #{inspect(parent_span)}
-      span: #{inspect(span)}
-    """ end)
   end
 
   def phoenix_router_dispatch_stop(_event, _measurements, metadata, _config) do
     _root_span = set_span_data(@tracer.root_span(), metadata)
-    span = @tracer.current_span()
 
-    Logger.debug(fn -> """
-    AppSignal.Phoenix.EventHandler received [:phoenix, :router_dispatch, :stop]:
-      root_span: #{inspect(root_span)}
-      span: #{inspect(span)}
-    """ end)
-
-    @tracer.close_span(span)
+    @tracer.close_span(@tracer.current_span())
   end
 
   def phoenix_router_dispatch_exception(
@@ -99,15 +72,7 @@ defmodule Appsignal.Phoenix.EventHandler do
         %{reason: %Plug.Conn.WrapperError{conn: conn, reason: reason, stack: stack}},
         _config
       ) do
-    root_span = @tracer.root_span()
-
-    Logger.debug(fn -> """
-    AppSignal.Phoenix.EventHandler received [:phoenix, :router_dispatch, :exception]:
-      root_span: #{inspect(root_span)}
-      span: #{inspect(@tracer.current_span())}
-    """ end)
-
-    add_error(root_span, conn, reason, stack)
+    add_error(@tracer.root_span(), conn, reason, stack)
   end
 
   def phoenix_router_dispatch_exception(
@@ -116,15 +81,7 @@ defmodule Appsignal.Phoenix.EventHandler do
         %{conn: conn, reason: reason, stacktrace: stack},
         _config
       ) do
-    root_span = @tracer.root_span()
-
-    Logger.debug(fn -> """
-    AppSignal.Phoenix.EventHandler received [:phoenix, :router_dispatch, :exception]:
-      root_span: #{inspect(root_span)}
-      span: #{inspect(@tracer.current_span())}
-    """ end)
-
-    add_error(root_span, conn, reason, stack)
+    add_error(@tracer.root_span(), conn, reason, stack)
   end
 
   defp add_error(
@@ -150,10 +107,10 @@ defmodule Appsignal.Phoenix.EventHandler do
   end
 
   def phoenix_template_render_start(_event, _measurements, metadata, _config) do
-    parent_span = @tracer.current_span()
+    parent = @tracer.current_span()
 
     "http_request"
-    |> @tracer.create_span(parent_span)
+    |> @tracer.create_span(parent)
     |> @span.set_name(
       "Render #{inspect(metadata.template)} (#{metadata.format}) template from #{module_name(metadata.view)}"
     )
