@@ -128,8 +128,8 @@ defmodule Appsignal.Phoenix.EventHandler do
     |> @span.set_sample_data_if_nil("session_data", Appsignal.Metadata.session(conn))
     |> @span.set_sample_data("metadata", %{
       "hostname" => appsignal_metadata["host"],
-      "method" => appsignal_metadata["method"],
-      "path" => appsignal_metadata["request_path"],
+      "request_method" => appsignal_metadata["method"],
+      "request_path" => appsignal_metadata["request_path"],
       "request_id" => appsignal_metadata["request_id"],
       "status" => appsignal_metadata["status"]
     })
