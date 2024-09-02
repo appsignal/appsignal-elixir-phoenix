@@ -131,7 +131,7 @@ defmodule Appsignal.Phoenix.EventHandler do
       "request_method" => appsignal_metadata["method"],
       "request_path" => appsignal_metadata["request_path"],
       "request_id" => appsignal_metadata["request_id"],
-      "status" => appsignal_metadata["status"]
+      "response_status" => appsignal_metadata["status"]
     })
   end
 
