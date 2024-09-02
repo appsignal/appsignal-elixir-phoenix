@@ -97,11 +97,10 @@ defmodule Appsignal.Phoenix.EventHandlerTest do
         Enum.filter(calls, fn {_span, key, _value} -> key == "metadata" end)
 
       assert %{
-               "hostname" => "www.example.com",
-               "method" => "GET",
+               "request_method" => "GET",
                "request_id" => nil,
-               "path" => "/",
-               "status" => 200
+               "request_path" => "/",
+               "response_status" => 200
              } == metadata
     end
   end
