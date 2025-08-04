@@ -38,28 +38,65 @@ defmodule Appsignal.Phoenix.EventHandler do
   end
 
   def phoenix_endpoint_start(_event, _measurements, _metadata, _config) do
+    IO.puts("!!! phoenix_endpoint_start")
+    IO.puts("root_span:")
+    IO.inspect(@tracer.root_span())
+    IO.puts("current_span:")
+    IO.inspect(@tracer.current_span())
+    IO.puts("---------------")
     parent = @tracer.current_span()
 
     "http_request"
     |> @tracer.create_span(parent)
     |> @span.set_attribute("appsignal:category", "call.phoenix_endpoint")
+
+    IO.puts("root_span:")
+    IO.inspect(@tracer.root_span())
+    IO.puts("current_span:")
+    IO.inspect(@tracer.current_span())
+    IO.puts("---------------")
   end
 
-  def phoenix_endpoint_stop(_event, _measurements, _metadata, _config) do
+  def phoenix_endpoint_stop(_event, _measurements, metadata, _config) do
+    IO.puts("!!! phoenix_endpoint_stop")
+    IO.puts("root_span:")
+    IO.inspect(@tracer.root_span())
+    IO.puts("current_span:")
+    IO.inspect(@tracer.current_span())
+    IO.puts("---------------")
     @tracer.close_span(@tracer.current_span())
   end
 
   def phoenix_router_dispatch_start(_event, _measurements, _metadata, _config) do
+    IO.puts("!!! phoenix_router_dispatch_start")
     parent = @tracer.current_span()
+    IO.puts("root_span:")
+    IO.inspect(@tracer.root_span())
+    IO.puts("current_span:")
+    IO.inspect(@tracer.current_span())
+    IO.puts("---------------")
 
     "http_request"
     |> @tracer.create_span(parent)
     |> @span.set_attribute("appsignal:category", "call.phoenix_router_dispatch")
+
+    IO.puts("root_span:")
+    IO.inspect(@tracer.root_span())
+    IO.puts("current_span:")
+    IO.inspect(@tracer.current_span())
+    IO.puts("---------------")
   end
 
   def phoenix_router_dispatch_stop(_event, _measurements, metadata, _config) do
-    _root_span = set_span_data(@tracer.root_span(), metadata)
+    IO.puts("!!! phoenix_router_dispatch_stop")
+    # IO.inspect(metadata)
+    IO.puts("root_span:")
+    IO.inspect(@tracer.root_span())
+    IO.puts("current_span:")
+    IO.inspect(@tracer.current_span())
+    IO.puts("---------------")
 
+    _root_span = set_span_data(@tracer.root_span(), metadata)
     @tracer.close_span(@tracer.current_span())
   end
 
@@ -104,25 +141,28 @@ defmodule Appsignal.Phoenix.EventHandler do
   end
 
   def phoenix_template_render_start(_event, _measurements, metadata, _config) do
-    parent = @tracer.current_span()
-
-    _ =
-      @span.set_sample_data_if_nil(@tracer.root_span(), "tags", %{
-        "phoenix_template" => metadata.template,
-        "phoenix_format" => metadata.format,
-        "phoenix_view" => module_name(metadata.view)
-      })
-
-    "http_request"
-    |> @tracer.create_span(parent)
-    |> @span.set_name(
-      "Render #{inspect(metadata.template)} (#{metadata.format}) template from #{module_name(metadata.view)}"
-    )
-    |> @span.set_attribute("appsignal:category", "render.phoenix_template")
+    IO.puts("!!! phoenix_template_render_start")
+    # parent = @tracer.current_span()
+    #
+    # _ =
+    #   @span.set_sample_data_if_nil(@tracer.root_span(), "tags", %{
+    #     "phoenix_template" => metadata.template,
+    #     "phoenix_format" => metadata.format,
+    #     "phoenix_view" => module_name(metadata.view)
+    #   })
+    #
+    # "http_request"
+    # |> @tracer.create_span(parent)
+    # |> @span.set_name(
+    #   "Render #{inspect(metadata.template)} (#{metadata.format}) template from #{module_name(metadata.view)}"
+    # )
+    # |> @span.set_attribute("appsignal:category", "render.phoenix_template")
   end
 
   def phoenix_template_render_stop(_event, _measurements, _metadata, _config) do
-    @tracer.close_span(@tracer.current_span())
+    IO.puts("!!! phoenix_template_render_stop")
+
+    # @tracer.close_span(@tracer.current_span())
   end
 
   defp set_span_data(span, %{conn: conn} = metadata) do
