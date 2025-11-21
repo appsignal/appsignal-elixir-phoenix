@@ -58,7 +58,7 @@ defmodule Appsignal.Phoenix.MixProject do
       end
 
     phoenix_version =
-      case {System.get_env("CI"), System.get_env("PHOENIX_VERSION")} do
+      case {System.get_env("CONTRIBUTION_CI"), System.get_env("PHOENIX_VERSION")} do
         {"true", nil} ->
           raise "PHOENIX_VERSION environment variable must be set on CI"
 

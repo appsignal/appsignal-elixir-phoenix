@@ -3,16 +3,18 @@ name: Elixir Phoenix package CI
 on:
   push:
     branches:
-    - main
-    - develop
+      - main
+      - develop
   pull_request:
     types:
-    - opened
-    - reopened
-    - synchronize
+      - opened
+      - reopened
+      - synchronize
   schedule:
     - cron: "0 0 * * 1-5"
   workflow_dispatch:
+env:
+  CONTRIBUTION_CI: "true"
 
 jobs:
   lint_git:
