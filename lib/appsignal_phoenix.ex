@@ -15,6 +15,24 @@ defmodule Appsignal.Phoenix do
         # ...
       end
 
+  ## Only reporting requests that fail
+
+  Set the `phoenix_errors_only` option to report a request only when it raises
+  an exception. Requests that succeed are not reported at all, which reduces the
+  number of samples this integration sends:
+
+      config :appsignal, :config,
+        otp_app: :my_app,
+        name: "my_app",
+        phoenix_errors_only: true
+
+  Because a successful request is not reported, instrumentation inside it is not
+  reported either: an `Appsignal.instrument/2` call, an Ecto query, or a function
+  decorated with `transaction_event()`. Requests that raise are reported in full.
+
+  The option does not apply to applications that `use Appsignal.Plug`, which
+  report the request themselves, or to LiveView and channel events.
+
   """
 
   @deprecated "Since AppSignal for Phoenix 2.3.0, Phoenix instrumentation is up automatically. The `use Appsignal.Phoenix` line is no longer needed and should be removed from your app's endpoint file."
