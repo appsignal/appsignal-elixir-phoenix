@@ -162,7 +162,7 @@ defmodule Appsignal.Phoenix.EventHandler do
   defp do_add_error(span, conn, reason, stack) do
     span
     |> @span.add_error(:error, reason, stack)
-    |> set_span_data(%{conn: conn})
+    |> set_span_data(%{conn: put_error_status(conn, reason)})
     |> @tracer.close_span()
 
     # No stop event arrives for the spans this request opened, so nothing else
@@ -211,6 +211,28 @@ defmodule Appsignal.Phoenix.EventHandler do
       :ok
     end
   end
+
+  # The router emits its exception event before `Phoenix.Endpoint.RenderErrors`
+  # renders and sends the response, so the conn carries no status yet, and the
+  # reported response status would be `nil`. Take it from the exception instead,
+  # the way `Appsignal.Plug.handle_error/5` does: `Plug.Exception.status/1`
+  # returns the `:plug_status` the exception carries, such as 404 for
+  # `Ecto.NoResultsError`, and 500 for anything that carries none.
+  #
+  # A conn that has sent its response already carries its real status, and
+  # `Plug.Conn.put_status/2` raises for one. A `:telemetry` handler that raises is
+  # detached for good, which would take error reporting with it, so only a conn
+  # that has not sent anything is touched. These are the states
+  # `Plug.Conn.put_status/2` accepts; a version of Plug that knows fewer of them
+  # cannot produce the ones it does not know.
+  @unsent_conn_states [:unset, :set, :set_upgrade, :set_chunked, :set_file]
+
+  defp put_error_status(%Plug.Conn{state: state} = conn, reason)
+       when state in @unsent_conn_states do
+    Plug.Conn.put_status(conn, Plug.Exception.status(reason))
+  end
+
+  defp put_error_status(conn, _reason), do: conn
 
   defp set_span_data(span, %{conn: conn} = metadata) do
     appsignal_metadata = Appsignal.Metadata.metadata(conn)

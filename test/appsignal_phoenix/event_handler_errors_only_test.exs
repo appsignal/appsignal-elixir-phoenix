@@ -153,8 +153,59 @@ defmodule Appsignal.Phoenix.EventHandlerErrorsOnlyTest do
       assert {:ok, [{%Span{}}]} = Test.Tracer.get(:close_span)
     end
 
+    test "sets the root span's response status" do
+      {:ok, calls} = Test.Span.get(:set_sample_data)
+
+      [{%Span{}, "metadata", metadata}] =
+        Enum.filter(calls, fn {_span, key, _value} -> key == "metadata" end)
+
+      assert 500 == metadata["response_status"]
+    end
+
     test "ignores the process" do
       assert [{_pid, :ignore}] = Tracer.lookup(self())
+    end
+  end
+
+  describe "after a request that raises an exception with a status" do
+    setup do
+      endpoint_start()
+      router_dispatch_start()
+      router_dispatch_exception(conn(), Plug.BadRequestError.exception([]))
+    end
+
+    test "sets the root span's response status to the exception's status" do
+      {:ok, calls} = Test.Span.get(:set_sample_data)
+
+      [{%Span{}, "metadata", metadata}] =
+        Enum.filter(calls, fn {_span, key, _value} -> key == "metadata" end)
+
+      assert 400 == metadata["response_status"]
+    end
+  end
+
+  describe "after a request that raises with a conn that already sent its response" do
+    # `Plug.Conn.put_status/2` raises for a conn that has sent its response, and
+    # a `:telemetry` handler that raises is detached for good. The conn carries
+    # its real status by then, so it is left alone.
+    setup do
+      endpoint_start()
+      router_dispatch_start()
+      endpoint_stop()
+      router_dispatch_exception(%{conn() | state: :sent, status: 204}, %RuntimeError{})
+    end
+
+    test "sets the root span's error" do
+      assert {:ok, [{%Span{}, :error, %RuntimeError{}, []}]} = Test.Span.get(:add_error)
+    end
+
+    test "keeps the response status the conn was sent with" do
+      {:ok, calls} = Test.Span.get(:set_sample_data)
+
+      [{%Span{}, "metadata", metadata}] =
+        Enum.filter(calls, fn {_span, key, _value} -> key == "metadata" end)
+
+      assert 204 == metadata["response_status"]
     end
   end
 
@@ -276,11 +327,11 @@ defmodule Appsignal.Phoenix.EventHandlerErrorsOnlyTest do
     )
   end
 
-  defp router_dispatch_exception do
+  defp router_dispatch_exception(conn \\ conn(), reason \\ %RuntimeError{}) do
     :telemetry.execute(
       [:phoenix, :router_dispatch, :exception],
       %{duration: 49_474_000},
-      %{conn: conn(), reason: %RuntimeError{}, stacktrace: [], options: []}
+      %{conn: conn, reason: reason, stacktrace: [], options: []}
     )
   end
 
