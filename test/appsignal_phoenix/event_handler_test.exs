@@ -162,8 +162,85 @@ defmodule Appsignal.Phoenix.EventHandlerTest do
                "port" => 80,
                "request_id" => nil,
                "request_path" => "/",
-               "status" => 200
+               "status" => 500
              } == environment
+    end
+
+    test "sets the root span's response status" do
+      {:ok, calls} = Test.Span.get(:set_sample_data)
+
+      [{%Span{}, "metadata", metadata}] =
+        Enum.filter(calls, fn {_span, key, _value} -> key == "metadata" end)
+
+      assert 500 == metadata["response_status"]
+    end
+  end
+
+  describe "after receiving a router_dispatch-exception event for an exception with a status" do
+    setup [:create_root_span, :router_dispatch_start_event]
+
+    setup do
+      :telemetry.execute(
+        [:phoenix, :router_dispatch, :exception],
+        %{duration: 49_474_000},
+        %{
+          conn: conn(),
+          reason: Plug.BadRequestError.exception([]),
+          stacktrace: [],
+          options: []
+        }
+      )
+    end
+
+    test "sets the root span's response status to the exception's status" do
+      {:ok, calls} = Test.Span.get(:set_sample_data)
+
+      [{%Span{}, "metadata", metadata}] =
+        Enum.filter(calls, fn {_span, key, _value} -> key == "metadata" end)
+
+      assert 400 == metadata["response_status"]
+    end
+
+    test "sets the root span's sample data" do
+      {:ok, calls} = Test.Span.get(:set_sample_data_if_nil)
+
+      [{%Span{}, "environment", environment}] =
+        Enum.filter(calls, fn {_span, key, _value} -> key == "environment" end)
+
+      assert 400 == environment["status"]
+    end
+  end
+
+  describe "after receiving a router_dispatch-exception event for a conn that sent its response" do
+    # `Plug.Conn.put_status/2` raises for a conn that has sent its response, and
+    # a `:telemetry` handler that raises is detached for good. The conn carries
+    # its real status by then, so it is left alone.
+    setup [:create_root_span, :router_dispatch_start_event]
+
+    setup do
+      :telemetry.execute(
+        [:phoenix, :router_dispatch, :exception],
+        %{duration: 49_474_000},
+        %{
+          conn: %{conn() | state: :sent, status: 204},
+          reason: %RuntimeError{},
+          stacktrace: [],
+          options: []
+        }
+      )
+    end
+
+    test "sets the root span's error" do
+      assert {:ok, [{%Span{}, :error, %RuntimeError{}, []}]} = Test.Span.get(:add_error)
+    end
+
+    test "keeps the response status the conn was sent with" do
+      {:ok, calls} = Test.Span.get(:set_sample_data)
+
+      [{%Span{}, "metadata", metadata}] =
+        Enum.filter(calls, fn {_span, key, _value} -> key == "metadata" end)
+
+      assert 204 == metadata["response_status"]
     end
   end
 

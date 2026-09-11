@@ -18,6 +18,10 @@ defmodule Appsignal.Phoenix.EventHandler do
   @route_key {__MODULE__, :route}
   @root_span_data_key {__MODULE__, :root_span_data_set}
 
+  # Whether this request is discarded unless it fails, which is what the
+  # `phoenix_errors_only` option asks for.
+  @discard_key {__MODULE__, :discard}
+
   def attach do
     handlers = %{
       [:phoenix, :endpoint, :start] => &__MODULE__.phoenix_endpoint_start/4,
@@ -55,6 +59,8 @@ defmodule Appsignal.Phoenix.EventHandler do
 
     parent = @tracer.current_span()
 
+    _ = start_discarding(parent)
+
     "http_request"
     |> @tracer.create_span(parent)
     |> @span.set_attribute("appsignal:category", "call.phoenix_endpoint")
@@ -64,14 +70,26 @@ defmodule Appsignal.Phoenix.EventHandler do
   def phoenix_endpoint_stop(_event, _measurements, metadata, _config) do
     span = pop(@endpoint_key)
 
-    # This event fires from a `register_before_send` callback, so it arrives
-    # before the router dispatch stop event does. The root span has to be
-    # described here, because it is closed below and cannot be described
-    # afterwards.
-    _ = Process.put(@root_span_data_key, true)
-    _root_span = set_span_data(@tracer.root_span(), with_route(metadata))
+    if discard?() do
+      # This request is not reported, so its root span is neither closed nor
+      # described. Describing it means building the params, environment and
+      # session sample data for a trace that is thrown away.
+      #
+      # An exception arriving after this event, raised by code that runs after
+      # the response was sent, still finds the span in the registry:
+      # `do_add_error/4` describes and closes it, and the request is reported
+      # after all.
+      discard_spans()
+    else
+      # This event fires from a `register_before_send` callback, so it arrives
+      # before the router dispatch stop event does. The root span has to be
+      # described here, because it is closed below and cannot be described
+      # afterwards.
+      _ = Process.put(@root_span_data_key, true)
+      _root_span = set_span_data(@tracer.root_span(), with_route(metadata))
 
-    @tracer.close_span(span)
+      @tracer.close_span(span)
+    end
   end
 
   def phoenix_router_dispatch_start(_event, _measurements, metadata, _config) do
@@ -87,6 +105,8 @@ defmodule Appsignal.Phoenix.EventHandler do
 
     parent = @tracer.current_span()
 
+    _ = start_discarding(parent)
+
     "http_request"
     |> @tracer.create_span(parent)
     |> @span.set_attribute("appsignal:category", "call.phoenix_router_dispatch")
@@ -96,12 +116,16 @@ defmodule Appsignal.Phoenix.EventHandler do
   def phoenix_router_dispatch_stop(_event, _measurements, metadata, _config) do
     span = pop(@dispatch_key)
 
-    # A Phoenix router can be dispatched to without a Phoenix endpoint, for
-    # example when a Plug application forwards to one. There is no endpoint stop
-    # event to describe the root span then, so this handler does it instead.
-    _root_span = set_root_span_data_unless_set(metadata)
+    if discard?() do
+      discard_spans()
+    else
+      # A Phoenix router can be dispatched to without a Phoenix endpoint, for
+      # example when a Plug application forwards to one. There is no endpoint stop
+      # event to describe the root span then, so this handler does it instead.
+      _root_span = set_root_span_data_unless_set(metadata)
 
-    @tracer.close_span(span)
+      @tracer.close_span(span)
+    end
   end
 
   def phoenix_router_dispatch_exception(
@@ -138,7 +162,7 @@ defmodule Appsignal.Phoenix.EventHandler do
   defp do_add_error(span, conn, reason, stack) do
     span
     |> @span.add_error(:error, reason, stack)
-    |> set_span_data(%{conn: conn})
+    |> set_span_data(%{conn: put_error_status(conn, reason)})
     |> @tracer.close_span()
 
     # No stop event arrives for the spans this request opened, so nothing else
@@ -150,27 +174,65 @@ defmodule Appsignal.Phoenix.EventHandler do
   end
 
   def phoenix_template_render_start(_event, _measurements, metadata, _config) do
-    parent = @tracer.current_span()
+    if discard?() do
+      # A span opened here would be a child of a root span that is discarded, so
+      # it is not reported either way. Nothing is pushed, so that the stop
+      # handler has nothing to pop.
+      :ok
+    else
+      parent = @tracer.current_span()
 
-    _ =
-      @span.set_sample_data_if_nil(@tracer.root_span(), "tags", %{
-        "phoenix_template" => metadata.template,
-        "phoenix_format" => metadata.format,
-        "phoenix_view" => module_name(metadata.view)
-      })
+      _ =
+        @span.set_sample_data_if_nil(@tracer.root_span(), "tags", %{
+          "phoenix_template" => metadata.template,
+          "phoenix_format" => metadata.format,
+          "phoenix_view" => module_name(metadata.view)
+        })
 
-    "http_request"
-    |> @tracer.create_span(parent)
-    |> @span.set_name(
-      "Render #{inspect(metadata.template)} (#{metadata.format}) template from #{module_name(metadata.view)}"
-    )
-    |> @span.set_attribute("appsignal:category", "render.phoenix_template")
-    |> push(@render_key)
+      _ =
+        "http_request"
+        |> @tracer.create_span(parent)
+        |> @span.set_name(
+          "Render #{inspect(metadata.template)} (#{metadata.format}) template from #{module_name(metadata.view)}"
+        )
+        |> @span.set_attribute("appsignal:category", "render.phoenix_template")
+        |> push(@render_key)
+
+      :ok
+    end
   end
 
   def phoenix_template_render_stop(_event, _measurements, _metadata, _config) do
-    @tracer.close_span(pop(@render_key))
+    if discard?() do
+      :ok
+    else
+      _ = @tracer.close_span(pop(@render_key))
+
+      :ok
+    end
   end
+
+  # The router emits its exception event before `Phoenix.Endpoint.RenderErrors`
+  # renders and sends the response, so the conn carries no status yet, and the
+  # reported response status would be `nil`. Take it from the exception instead,
+  # the way `Appsignal.Plug.handle_error/5` does: `Plug.Exception.status/1`
+  # returns the `:plug_status` the exception carries, such as 404 for
+  # `Ecto.NoResultsError`, and 500 for anything that carries none.
+  #
+  # A conn that has sent its response already carries its real status, and
+  # `Plug.Conn.put_status/2` raises for one. A `:telemetry` handler that raises is
+  # detached for good, which would take error reporting with it, so only a conn
+  # that has not sent anything is touched. These are the states
+  # `Plug.Conn.put_status/2` accepts; a version of Plug that knows fewer of them
+  # cannot produce the ones it does not know.
+  @unsent_conn_states [:unset, :set, :set_upgrade, :set_chunked, :set_file]
+
+  defp put_error_status(%Plug.Conn{state: state} = conn, reason)
+       when state in @unsent_conn_states do
+    Plug.Conn.put_status(conn, Plug.Exception.status(reason))
+  end
+
+  defp put_error_status(conn, _reason), do: conn
 
   defp set_span_data(span, %{conn: conn} = metadata) do
     appsignal_metadata = Appsignal.Metadata.metadata(conn)
@@ -213,6 +275,68 @@ defmodule Appsignal.Phoenix.EventHandler do
     _ = Process.delete(@route_key)
 
     :ok
+  end
+
+  # Decides whether this request is reported only if it fails, and remembers the
+  # decision for the rest of it: the configuration could change halfway through a
+  # request, and the stop handlers have to agree with the start handlers.
+  #
+  # Only the first span this handler opens for a request decides. A router
+  # dispatch inside an endpoint, or a forwarded router dispatch, must not decide
+  # again: its parent is a span this handler opened itself. Empty stacks mean no
+  # request of ours is in flight, so nothing an earlier request decided leaks
+  # into this one.
+  #
+  # A request whose root span was opened elsewhere, such as by `Appsignal.Plug`,
+  # is never discarded. That span is reported either way, and leaving a child of
+  # it unclosed would only make the trace incomplete.
+  defp start_discarding(parent) do
+    if no_spans_open?() do
+      _ = Process.put(@discard_key, is_nil(parent) and errors_only?())
+    end
+
+    :ok
+  end
+
+  defp discard?, do: Process.get(@discard_key) == true
+
+  # Takes this request's spans out of the registry without closing them, once the
+  # last span this handler opened for it is done. Nothing is sent: a trace leaves
+  # the extension only when its root span closes, and the extension frees a span
+  # it never closed once the last reference to it is garbage collected.
+  #
+  # They cannot be left in the registry. On a web server that serves more than
+  # one request per process, such as Bandit, the next request would find this
+  # request's root span, open its own spans as children of a span that never
+  # closes, and go unreported as well.
+  #
+  # The endpoint stop event fires from a `register_before_send` callback, so it
+  # arrives while the router dispatch is still open. It discards nothing then,
+  # and the router dispatch stop event does it instead.
+  #
+  # `Appsignal.Tracer.delete/1` is called directly, rather than through the
+  # `@tracer` module attribute, because `Appsignal.Test.Tracer` does not wrap it.
+  # Both write to the same registry table, so this behaves the same under test.
+  defp discard_spans do
+    if no_spans_open?() do
+      _ = Appsignal.Tracer.delete(self())
+
+      forget()
+    end
+
+    :ok
+  end
+
+  defp no_spans_open? do
+    Process.get(@endpoint_key, []) == [] and Process.get(@dispatch_key, []) == []
+  end
+
+  # Read from the AppSignal configuration at runtime, so that it can be set from
+  # a release's runtime configuration. `Appsignal.Config` merges the application's
+  # configuration over its defaults and keeps the keys it does not know about, so
+  # this works without a change to the AppSignal package.
+  defp errors_only? do
+    Application.get_env(:appsignal, :config, [])[:phoenix_errors_only] == true
   end
 
   defp set_root_span_data_unless_set(metadata) do
@@ -261,7 +385,14 @@ defmodule Appsignal.Phoenix.EventHandler do
 
   defp forget do
     Enum.each(
-      [@endpoint_key, @dispatch_key, @render_key, @route_key, @root_span_data_key],
+      [
+        @endpoint_key,
+        @dispatch_key,
+        @render_key,
+        @route_key,
+        @root_span_data_key,
+        @discard_key
+      ],
       &Process.delete/1
     )
   end
